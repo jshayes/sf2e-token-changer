@@ -1,0 +1,13 @@
+<div class="tab scrollable {{tab.cssClass}}" data-tab="sf2e-token-changer" data-group="sheet">
+  <h3>Token State Images</h3>
+
+  <label>Rules (JSON)</label>
+  <div class="form-group">
+    {{#if source}}
+      <textarea name="flags.sf2e-token-changer.rulesJSON" rows="20" spellcheck="false">{{source.flags.sf2e-token-changer.rulesJSON}}</textarea>
+    {{else}}
+      <textarea name="flags.sf2e-token-changer.rulesJSON" rows="20" spellcheck="false">{{document.flags.sf2e-token-changer.rulesJSON}}</textarea>
+    {{/if}}
+  </div>
+  <p class="notes">Advanced configuration. Must be valid JSON.</p>
+</div>

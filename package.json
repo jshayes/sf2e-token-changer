@@ -1,0 +1,19 @@
+{
+  "name": "sf2e-token-changer",
+  "version": "1.0.0",
+  "description": "Boilerplate Vite module for SF2E token changer migration",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "foundry-pf2e": "github:7H3LaughingMan/foundry-pf2e#v13",
+    "sass": "^1.54.8",
+    "typescript": "5.9.3",
+    "vite": "^7.1.4"
+  }
+}
