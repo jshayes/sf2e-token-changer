@@ -13,6 +13,15 @@ async function writeManifest(useDevEntry: boolean): Promise<void> {
   if (process.env.MODULE_VERSION) {
     manifest.version = process.env.MODULE_VERSION;
   }
+  if (process.env.MODULE_URL) {
+    manifest.url = process.env.MODULE_URL;
+  }
+  if (process.env.MODULE_MANIFEST_URL) {
+    manifest.manifest = process.env.MODULE_MANIFEST_URL;
+  }
+  if (process.env.MODULE_DOWNLOAD_URL) {
+    manifest.download = process.env.MODULE_DOWNLOAD_URL;
+  }
 
   manifest.esmodules = useDevEntry
     ? [`${devServerOrigin}${basePath}scripts/module.js`]
