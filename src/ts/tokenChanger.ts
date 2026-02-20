@@ -1,8 +1,8 @@
+import { TokenDocumentPF2e } from "foundry-pf2e";
 import { moduleId } from "./constants";
 
 const tokenConfigTemplate = `modules/${moduleId}/templates/token-config.hbs`;
-const tokenImageFieldTemplate =
-  `modules/${moduleId}/templates/components/token-image-field.hbs`;
+const tokenImageFieldTemplate = `modules/${moduleId}/templates/components/token-image-field.hbs`;
 
 type HpPercentCondition = {
   type: "hp-percent";
@@ -21,7 +21,10 @@ type StatusEffectCondition = {
   value: string[];
 };
 
-type RuleCondition = HpPercentCondition | CombatCondition | StatusEffectCondition;
+type RuleCondition =
+  | HpPercentCondition
+  | CombatCondition
+  | StatusEffectCondition;
 
 type TokenUpdateEffect = {
   type: "token-update";
@@ -60,13 +63,17 @@ type ApplyStateSocketPayload = {
 
 type TokenOrPlaceable = TokenDocument | { document: TokenDocument };
 
-function asTokenDocument(token: TokenOrPlaceable | null | undefined): TokenDocument | undefined {
+function asTokenDocument(
+  token: TokenOrPlaceable | null | undefined,
+): TokenDocument | undefined {
   if (!token) return undefined;
   if ("document" in token) return token.document;
   return token;
 }
 
-function isApplyStateSocketPayload(value: unknown): value is ApplyStateSocketPayload {
+function isApplyStateSocketPayload(
+  value: unknown,
+): value is ApplyStateSocketPayload {
   const payload = value as Partial<ApplyStateSocketPayload> | null | undefined;
   return (
     payload?.type === "applyState" &&
@@ -76,7 +83,9 @@ function isApplyStateSocketPayload(value: unknown): value is ApplyStateSocketPay
 }
 
 async function loadModuleTemplates(paths: string[]): Promise<void> {
-  const loader = (globalThis as { loadTemplates?: (templates: string[]) => Promise<unknown> }).loadTemplates;
+  const loader = (
+    globalThis as { loadTemplates?: (templates: string[]) => Promise<unknown> }
+  ).loadTemplates;
   if (!loader) return;
   await loader(paths);
 }
@@ -117,10 +126,14 @@ function validateRulesJSON(json: unknown): TokenRule[] | null | undefined {
 }
 
 function getModuleFlags(token: TokenDocument): ModuleTokenFlags {
-  return ((token.flags as Record<string, unknown>)[moduleId] ?? {}) as ModuleTokenFlags;
+  return ((token.flags as Record<string, unknown>)[moduleId] ??
+    {}) as ModuleTokenFlags;
 }
 
-function checkHpPercentCondition(condition: HpPercentCondition, token: TokenDocument): boolean {
+function checkHpPercentCondition(
+  condition: HpPercentCondition,
+  token: TokenDocument,
+): boolean {
   const actor = token.actor as
     | {
         system?: {
@@ -151,8 +164,14 @@ function checkHpPercentCondition(condition: HpPercentCondition, token: TokenDocu
   }
 }
 
-function checkCombatCondition(condition: CombatCondition, token: TokenDocument): boolean {
-  return Boolean((token as TokenDocument & { inCombat?: boolean }).inCombat) === condition.value;
+function checkCombatCondition(
+  condition: CombatCondition,
+  token: TokenDocument,
+): boolean {
+  return (
+    Boolean((token as TokenDocument & { inCombat?: boolean }).inCombat) ===
+    condition.value
+  );
 }
 
 function checkStatusEffectCondition(
@@ -211,10 +230,17 @@ function getActions(tokens: TokenDocument[]): {
   tokenUpdates: Record<string, Record<string, unknown>[]>;
   soundsToPlay: Array<{ src: string; volume?: number; loop: boolean }>;
 } {
-  const tokenUpdates: Record<string, Record<string, Record<string, unknown>>> = {};
-  const soundsToPlay: Array<{ src: string; volume?: number; loop: boolean }> = [];
+  const tokenUpdates: Record<
+    string,
+    Record<string, Record<string, unknown>>
+  > = {};
+  const soundsToPlay: Array<{ src: string; volume?: number; loop: boolean }> =
+    [];
 
-  const queueTokenUpdate = (token: TokenDocument, update: Record<string, unknown>) => {
+  const queueTokenUpdate = (
+    token: TokenDocument,
+    update: Record<string, unknown>,
+  ) => {
     const sceneId = String(token.parent?.id ?? "");
     if (!sceneId) return;
 
@@ -231,6 +257,15 @@ function getActions(tokens: TokenDocument[]): {
     const rule = findHighestPriorityRule(token);
     if (!rule) {
       if (flags._defaults) {
+        console.log("removing defaults", {
+          flags,
+          token: {
+            id: token.id,
+            flags: {
+              [moduleId]: foundry.utils.deepClone(token.flags[moduleId]),
+            },
+          },
+        });
         queueTokenUpdate(token, {
           ...flags._defaults,
           [`flags.${moduleId}.-=_defaults`]: null,
@@ -242,6 +277,15 @@ function getActions(tokens: TokenDocument[]): {
 
     const tokenUpdate: Record<string, unknown> = {};
     if (!flags._defaults) {
+      console.log("setting _defaults", {
+        flags,
+        token: {
+          id: token.id,
+          flags: { [moduleId]: foundry.utils.deepClone(token.flags[moduleId]) },
+        },
+        ring: token.ring,
+        texture: token.texture,
+      });
       tokenUpdate[`flags.${moduleId}._defaults`] = {
         ring: token.ring,
         texture: token.texture,
@@ -255,12 +299,12 @@ function getActions(tokens: TokenDocument[]): {
     for (const effect of rule.effects ?? []) {
       switch (effect.type) {
         case "token-update": {
-          const currentRingTexture =
-            (token.ring as { subject?: { texture?: unknown } } | undefined)?.subject
-              ?.texture;
-          const nextRingTexture =
-            (effect.value.ring as { subject?: { texture?: unknown } } | undefined)
-              ?.subject?.texture;
+          const currentRingTexture = (
+            token.ring as { subject?: { texture?: unknown } } | undefined
+          )?.subject?.texture;
+          const nextRingTexture = (
+            effect.value.ring as { subject?: { texture?: unknown } } | undefined
+          )?.subject?.texture;
 
           if (currentRingTexture !== nextRingTexture) {
             queueTokenUpdate(token, { ...tokenUpdate, ...effect.value });
@@ -303,7 +347,10 @@ async function handleTokenEvents(
   tokens: Array<TokenDocument | null | undefined>,
   skipSound = false,
 ): Promise<void> {
-  const cleanTokens = tokens.filter((token): token is TokenDocument => Boolean(token));
+  console.log("handleTokenEvents", tokens);
+  const cleanTokens = tokens.filter((token): token is TokenDocument =>
+    Boolean(token),
+  );
 
   if (!game.user.isGM) {
     if (canvas.scene) {
@@ -324,6 +371,7 @@ async function handleTokenEvents(
 
   for (const [sceneId, updates] of Object.entries(tokenUpdates)) {
     const scene = game.scenes.get(sceneId);
+    console.log({ scene });
     if (!scene) continue;
     await scene.updateEmbeddedDocuments(
       "Token",
@@ -333,10 +381,9 @@ async function handleTokenEvents(
 
   if (!skipSound) {
     for (const sound of soundsToPlay) {
-      foundry.audio.AudioHelper.play(
-        sound,
-        { broadcast: true } as unknown as { recipients: string[] },
-      );
+      foundry.audio.AudioHelper.play(sound, { broadcast: true } as unknown as {
+        recipients: string[];
+      });
     }
   }
 }
@@ -355,9 +402,22 @@ function handleActorEvent(actor: Actor): void {
 }
 
 function handleCombatantEvents(combatants: Combatant[]): void {
+  console.log(
+    "handleCombatantEvents",
+    combatants,
+    combatants.map((x) => x.token),
+    combatants.map((x) => x.tokenId),
+  );
   const docs = combatants
-    .map((combatant) => asTokenDocument(combatant.token as TokenOrPlaceable | null))
-    .filter((token): token is TokenDocument => Boolean(token));
+    .filter(
+      <T extends Combatant>(x: T): x is T & { tokenId: string } => !!x.tokenId,
+    )
+    .map(
+      (x) => canvas.scene?.tokens.get(x.tokenId),
+      //asTokenDocument(combatant.token as TokenOrPlaceable | null),
+    )
+    .filter((x) => !!x);
+  // .filter((token): token is TokenDocumentPF2e => Boolean(token));
 
   void handleTokenEvents(docs);
 }
@@ -367,6 +427,7 @@ function handleCombatantEvent(combatant: Combatant): void {
 }
 
 function handleCombatEvent(encounter: Combat): void {
+  console.log("handleCombatEvent", encounter);
   handleCombatantEvents(Array.from(encounter.combatants));
 }
 
@@ -413,7 +474,10 @@ export function registerTokenChangerHooks(): void {
   Hooks.on("preUpdateActor", (_actor, changes) => {
     const draft = changes as {
       prototypeToken?: {
-        flags?: Record<string, { rulesJSON?: unknown; rules?: TokenRule[] | null }>;
+        flags?: Record<
+          string,
+          { rulesJSON?: unknown; rules?: TokenRule[] | null }
+        >;
       };
     };
 
@@ -431,7 +495,10 @@ export function registerTokenChangerHooks(): void {
 
   Hooks.on("preUpdateToken", (_doc, changes) => {
     const draft = changes as {
-      flags?: Record<string, { rulesJSON?: unknown; rules?: TokenRule[] | null }>;
+      flags?: Record<
+        string,
+        { rulesJSON?: unknown; rules?: TokenRule[] | null }
+      >;
     };
 
     const raw = draft.flags?.[moduleId]?.rulesJSON;
@@ -448,7 +515,10 @@ export function registerTokenChangerHooks(): void {
 
   Hooks.on("createCombat", handleCombatEvent);
   Hooks.on("updateCombat", handleCombatEvent);
-  Hooks.on("deleteCombat", handleCombatEvent);
+  Hooks.on("deleteCombat", (...args) => {
+    console.log("deleteCombat");
+    return handleCombatEvent(...args);
+  });
 
   Hooks.on("createCombatant", handleCombatantEvent);
   Hooks.on("updateCombatant", handleCombatantEvent);

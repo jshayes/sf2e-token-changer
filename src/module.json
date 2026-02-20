@@ -3,7 +3,7 @@
   "id": "sf2e-token-changer",
   "title": "SF2E Token Changer",
   "description": "Token state automation module for SF2E.",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "system": [],
   "dependencies": [],
   "scripts": [],
