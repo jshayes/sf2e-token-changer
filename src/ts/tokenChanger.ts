@@ -257,15 +257,6 @@ function getActions(tokens: TokenDocument[]): {
     const rule = findHighestPriorityRule(token);
     if (!rule) {
       if (flags._defaults) {
-        console.log("removing defaults", {
-          flags,
-          token: {
-            id: token.id,
-            flags: {
-              [moduleId]: foundry.utils.deepClone(token.flags[moduleId]),
-            },
-          },
-        });
         queueTokenUpdate(token, {
           ...flags._defaults,
           [`flags.${moduleId}.-=_defaults`]: null,
@@ -277,15 +268,6 @@ function getActions(tokens: TokenDocument[]): {
 
     const tokenUpdate: Record<string, unknown> = {};
     if (!flags._defaults) {
-      console.log("setting _defaults", {
-        flags,
-        token: {
-          id: token.id,
-          flags: { [moduleId]: foundry.utils.deepClone(token.flags[moduleId]) },
-        },
-        ring: token.ring,
-        texture: token.texture,
-      });
       tokenUpdate[`flags.${moduleId}._defaults`] = {
         ring: token.ring,
         texture: token.texture,
@@ -347,7 +329,6 @@ async function handleTokenEvents(
   tokens: Array<TokenDocument | null | undefined>,
   skipSound = false,
 ): Promise<void> {
-  console.log("handleTokenEvents", tokens);
   const cleanTokens = tokens.filter((token): token is TokenDocument =>
     Boolean(token),
   );
@@ -371,7 +352,6 @@ async function handleTokenEvents(
 
   for (const [sceneId, updates] of Object.entries(tokenUpdates)) {
     const scene = game.scenes.get(sceneId);
-    console.log({ scene });
     if (!scene) continue;
     await scene.updateEmbeddedDocuments(
       "Token",
@@ -402,12 +382,6 @@ function handleActorEvent(actor: Actor): void {
 }
 
 function handleCombatantEvents(combatants: Combatant[]): void {
-  console.log(
-    "handleCombatantEvents",
-    combatants,
-    combatants.map((x) => x.token),
-    combatants.map((x) => x.tokenId),
-  );
   const docs = combatants
     .filter(
       <T extends Combatant>(x: T): x is T & { tokenId: string } => !!x.tokenId,
@@ -427,7 +401,6 @@ function handleCombatantEvent(combatant: Combatant): void {
 }
 
 function handleCombatEvent(encounter: Combat): void {
-  console.log("handleCombatEvent", encounter);
   handleCombatantEvents(Array.from(encounter.combatants));
 }
 
@@ -515,10 +488,7 @@ export function registerTokenChangerHooks(): void {
 
   Hooks.on("createCombat", handleCombatEvent);
   Hooks.on("updateCombat", handleCombatEvent);
-  Hooks.on("deleteCombat", (...args) => {
-    console.log("deleteCombat");
-    return handleCombatEvent(...args);
-  });
+  Hooks.on("deleteCombat", handleCombatEvent);
 
   Hooks.on("createCombatant", handleCombatantEvent);
   Hooks.on("updateCombatant", handleCombatantEvent);
