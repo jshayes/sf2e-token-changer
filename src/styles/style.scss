@@ -12,11 +12,11 @@
 }
 
 .sf2e-token-state-editor__section-content {
-  height: 200px;
+  height: 206px;
 }
 
 .sf2e-token-state-editor__rows {
-  height: 170px;
+  height: 176px;
   overflow: auto;
   padding-right: 0.25rem;
 }
@@ -33,7 +33,6 @@
 }
 
 .sf2e-token-state-editor__empty-state {
-  height: 170px;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -43,6 +42,10 @@
   text-align: center;
   font-size: 0.85rem;
   opacity: 0.8;
+}
+
+.sf2e-token-state-editor__empty-state-content {
+  height: 176px;
 }
 
 .sf2e-token-state-editor__empty-state::before,
@@ -85,6 +88,18 @@
   padding-right: 0.75rem;
   margin-bottom: 0.75rem;
   overflow: visible;
+}
+
+.sf2e-token-state-editor__row--drop-target {
+  background: color-mix(
+    in srgb,
+    var(--color-highlight, #3a7bd5) 10%,
+    transparent
+  );
+  outline: 2px solid
+    color-mix(in srgb, var(--color-highlight, #3a7bd5) 55%, transparent);
+  outline-offset: -1px;
+  border-radius: 4px;
 }
 
 .sf2e-token-state-editor__row-error {

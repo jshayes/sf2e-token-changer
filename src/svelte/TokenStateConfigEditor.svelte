@@ -37,6 +37,7 @@
 
   let config: TokenStateUiConfig = deepClone(initialConfig);
   let dragState: { list: EditorRowList; index: number } | null = null;
+  let dropTarget: { list: EditorRowList; index: number } | null = null;
   let conditionOptions: ConditionOption[] = getConditionOptions();
   let imageConfigModal: ImageConfigModalState | null = null;
   let soundConfigModal: SoundConfigModalState | null = null;
@@ -351,28 +352,48 @@
 
   function startDrag(event: DragEvent, list: EditorRowList, index: number): void {
     dragState = { list, index };
+    dropTarget = null;
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = "move";
       event.dataTransfer.setData("text/plain", `${list}:${index}`);
     }
   }
 
-  function dragOver(event: DragEvent): void {
+  function dragOver(event: DragEvent, list: EditorRowList, index: number): void {
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+    if (!dragState || dragState.list !== list || dragState.index === index) {
+      dropTarget = null;
+      return;
+    }
+    if (dropTarget?.list === list && dropTarget.index === index) return;
+    dropTarget = { list, index };
   }
 
   function dropOn(event: DragEvent, list: EditorRowList, index: number): void {
     event.preventDefault();
-    if (!dragState || dragState.list !== list) return;
-    if (dragState.index === index) return;
+    if (!dragState || dragState.list !== list) {
+      dropTarget = null;
+      return;
+    }
+    if (dragState.index === index) {
+      dropTarget = null;
+      dragState = null;
+      return;
+    }
 
     const rows = [...config[list]];
     const [moved] = rows.splice(dragState.index, 1);
     if (!moved) return;
     rows.splice(index, 0, moved);
     dragState = null;
+    dropTarget = null;
     config = { ...config, [list]: rows } as TokenStateUiConfig;
+  }
+
+  function endDrag(): void {
+    dragState = null;
+    dropTarget = null;
   }
 
 </script>
@@ -408,7 +429,7 @@
     </div>
     <div class="sf2e-token-state-editor__section-content">
       {#if config.tokenStates.length === 0}
-        <p class="sf2e-token-state-editor__empty-state">No token states configured</p>
+        <p class="sf2e-token-state-editor__empty-state-content sf2e-token-state-editor__empty-state">No token states configured</p>
       {:else}
         <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--token">
           <span>Row</span><span>Name</span><span>Condition</span><span>Image</span>
@@ -418,13 +439,15 @@
             <TokenStateRow
               {row}
               {index}
+              isDropTarget={dropTarget?.list === "tokenStates" && dropTarget.index === index}
               showValidation={hasAttemptedSave}
               onNameInput={updateConfig}
               onOpenConditions={openTokenStateConditionsConfig}
               onOpenImage={openTokenStateImageConfig}
               onRemove={(rowIndex) => removeRow("tokenStates", rowIndex)}
               onDragStart={(event, rowIndex) => startDrag(event, "tokenStates", rowIndex)}
-              onDragOver={dragOver}
+              onDragEnd={endDrag}
+              onDragOver={(event, rowIndex) => dragOver(event, "tokenStates", rowIndex)}
               onDrop={(event, rowIndex) => dropOn(event, "tokenStates", rowIndex)}
             />
           {/each}
@@ -440,7 +463,7 @@
     </div>
     <div class="sf2e-token-state-editor__section-content">
       {#if config.sounds.length === 0}
-        <p class="sf2e-token-state-editor__empty-state">No sounds configured</p>
+        <p class="sf2e-token-state-editor__empty-state-content sf2e-token-state-editor__empty-state">No sounds configured</p>
       {:else}
         <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--sound">
           <span>Row</span><span>Name</span><span>Condition</span><span>Sound</span>
@@ -450,13 +473,15 @@
             <SoundRow
               {row}
               {index}
+              isDropTarget={dropTarget?.list === "sounds" && dropTarget.index === index}
               showValidation={hasAttemptedSave}
               onNameInput={updateConfig}
               onOpenConditions={openSoundConditionsConfig}
               onOpenSound={openSoundConfig}
               onRemove={(rowIndex) => removeRow("sounds", rowIndex)}
               onDragStart={(event, rowIndex) => startDrag(event, "sounds", rowIndex)}
-              onDragOver={dragOver}
+              onDragEnd={endDrag}
+              onDragOver={(event, rowIndex) => dragOver(event, "sounds", rowIndex)}
               onDrop={(event, rowIndex) => dropOn(event, "sounds", rowIndex)}
             />
           {/each}

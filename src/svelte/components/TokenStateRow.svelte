@@ -5,13 +5,15 @@
 
   export let row: TokenStateImageRuleConfig;
   export let index: number;
+  export let isDropTarget = false;
   export let showValidation = false;
   export let onNameInput: () => void;
   export let onOpenConditions: (index: number) => void;
   export let onOpenImage: (index: number) => void;
   export let onRemove: (index: number) => void;
   export let onDragStart: (event: DragEvent, index: number) => void;
-  export let onDragOver: (event: DragEvent) => void;
+  export let onDragEnd: () => void;
+  export let onDragOver: (event: DragEvent, index: number) => void;
   export let onDrop: (event: DragEvent, index: number) => void;
 
   function hasEmptyStatusEffectCondition(conditions: UiCondition[]): boolean {
@@ -27,9 +29,10 @@
 
 <article
   class="sf2e-token-state-editor__row"
+  class:sf2e-token-state-editor__row--drop-target={isDropTarget}
   data-list="tokenStates"
   data-index={index}
-  on:dragover={onDragOver}
+  on:dragover={(e) => onDragOver(e, index)}
   on:drop={(e) => onDrop(e, index)}
 >
   <div class="sf2e-token-state-editor__row-toolbar">
@@ -39,6 +42,7 @@
       data-action="drag-handle"
       title="Drag priority"
       on:dragstart={(e) => onDragStart(e, index)}
+      on:dragend={onDragEnd}
     >☰</button>
   </div>
 
