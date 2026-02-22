@@ -35,6 +35,10 @@
 
   type EditorRowList = "tokenStates" | "sounds";
   type Row = TokenStateImageRuleConfig | SoundTriggerRuleConfig;
+  type ImageConfigTarget =
+    | { kind: "default" }
+    | { kind: "tokenState"; index: number };
+  type SoundConfigTarget = { index: number };
 
   const conditionTypeOptions: Array<{ value: ConditionType; label: string }> = [
     { value: "hp-percent", label: "HP Percent" },
@@ -59,6 +63,20 @@
   let dragState: { list: EditorRowList; index: number } | null = null;
   let conditionOptions: Array<{ slug: string; name: string }> = getConditionOptions();
   let openConditionPickerKey: string | null = null;
+  let imageConfigModal:
+    | {
+        target: ImageConfigTarget;
+        image: string;
+        scale: number;
+      }
+    | null = null;
+  let soundConfigModal:
+    | {
+        target: SoundConfigTarget;
+        src: string;
+        volume: number;
+      }
+    | null = null;
 
   $: jsonPreview = JSON.stringify(config, null, 2);
 
@@ -175,6 +193,84 @@
     openConditionPickerKey = null;
   }
 
+  function openDefaultImageConfig(): void {
+    imageConfigModal = {
+      target: { kind: "default" },
+      image: config.default.image,
+      scale: config.default.scale,
+    };
+  }
+
+  function openTokenStateImageConfig(index: number): void {
+    const row = config.tokenStates[index];
+    if (!row) return;
+    imageConfigModal = {
+      target: { kind: "tokenState", index },
+      image: row.image,
+      scale: row.scale,
+    };
+  }
+
+  function closeImageConfigModal(): void {
+    imageConfigModal = null;
+  }
+
+  function openSoundConfig(index: number): void {
+    const row = config.sounds[index];
+    if (!row) return;
+    soundConfigModal = {
+      target: { index },
+      src: row.src,
+      volume: row.volume,
+    };
+  }
+
+  function closeSoundConfigModal(): void {
+    soundConfigModal = null;
+  }
+
+  async function browseImageConfigModal(): Promise<void> {
+    if (!imageConfigModal) return;
+    const selected = await openFilePicker("image", imageConfigModal.image);
+    if (!selected) return;
+    imageConfigModal = { ...imageConfigModal, image: selected };
+  }
+
+  function saveImageConfigModal(): void {
+    if (!imageConfigModal) return;
+    if (imageConfigModal.target.kind === "default") {
+      config.default.image = imageConfigModal.image;
+      config.default.scale = clamp(imageConfigModal.scale, 0.1, 3);
+      updateConfig();
+      imageConfigModal = null;
+      return;
+    }
+
+    const row = config.tokenStates[imageConfigModal.target.index];
+    if (!row) return;
+    row.image = imageConfigModal.image;
+    row.scale = clamp(imageConfigModal.scale, 0.1, 3);
+    updateConfig();
+    imageConfigModal = null;
+  }
+
+  async function browseSoundConfigModal(): Promise<void> {
+    if (!soundConfigModal) return;
+    const selected = await openFilePicker("audio", soundConfigModal.src);
+    if (!selected) return;
+    soundConfigModal = { ...soundConfigModal, src: selected };
+  }
+
+  function saveSoundConfigModal(): void {
+    if (!soundConfigModal) return;
+    const row = config.sounds[soundConfigModal.target.index];
+    if (!row) return;
+    row.src = soundConfigModal.src;
+    row.volume = clamp(soundConfigModal.volume, 0, 1);
+    updateConfig();
+    soundConfigModal = null;
+  }
+
   function toggleStatusCondition(row: Row, slug: string): void {
     if (row.condition.type !== "status-effect") return;
     const selected = new Set(row.condition.value);
@@ -200,31 +296,6 @@
 
   function setRowScale(row: TokenStateImageRuleConfig, value: number): void {
     row.scale = clamp(value, 0.1, 3);
-    updateConfig();
-  }
-
-  function setRowVolume(row: SoundTriggerRuleConfig, value: number): void {
-    row.volume = clamp(value, 0, 1);
-    updateConfig();
-  }
-
-  async function pickDefaultImage(): Promise<void> {
-    const selected = await openFilePicker("image", config.default.image);
-    if (selected) {
-      config.default.image = selected;
-      updateConfig();
-    }
-  }
-
-  async function pickRowAsset(list: EditorRowList, index: number, type: "image" | "audio"): Promise<void> {
-    const rows = config[list];
-    const row = rows[index];
-    if (!row) return;
-    const current = type === "image" ? (row as TokenStateImageRuleConfig).image : (row as SoundTriggerRuleConfig).src;
-    const selected = await openFilePicker(type, current);
-    if (!selected) return;
-    if (type === "image") (row as TokenStateImageRuleConfig).image = selected;
-    else (row as SoundTriggerRuleConfig).src = selected;
     updateConfig();
   }
 
@@ -272,16 +343,17 @@
       <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--asset">
         <label>Image</label>
         <div class="form-fields">
-          <input type="text" bind:value={config.default.image} />
-          <button type="button" on:click={pickDefaultImage}>Browse</button>
+          <input type="text" value={config.default.image} readonly />
+          <button type="button" class="sf2e-token-state-editor__icon-button" on:click={openDefaultImageConfig} title="Configure image">
+            <i class="fa-solid fa-gear"></i>
+          </button>
         </div>
       </div>
 
       <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--value">
         <label>Scale</label>
         <div class="form-fields">
-          <input type="range" min="0.1" max="3" step="0.05" bind:value={config.default.scale} on:input={(e) => setDefaultScale(Number((e.currentTarget as HTMLInputElement).value))} />
-          <input type="number" min="0.1" max="3" step="0.05" bind:value={config.default.scale} on:input={(e) => setDefaultScale(Number((e.currentTarget as HTMLInputElement).value))} />
+          <input type="number" value={config.default.scale.toFixed(2)} readonly />
         </div>
       </div>
 
@@ -294,7 +366,7 @@
       <button type="button" on:click={addTokenState}><i class="fa-solid fa-plus"></i></button>
     </div>
     <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--token">
-      <span>Row</span><span>Type</span><span>Condition</span><span>Image</span><span>Scale</span><span>Actions</span>
+      <span>Row</span><span>Type</span><span>Condition</span><span>Image</span>
     </div>
     <div class="sf2e-token-state-editor__rows" data-list="tokenStates">
       {#each config.tokenStates as row, index (row.id)}
@@ -404,21 +476,27 @@
           <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--asset">
             <label>Image</label>
             <div class="form-fields">
-              <input type="text" bind:value={row.image} />
-              <button type="button" on:click={() => pickRowAsset("tokenStates", index, "image")}>Browse</button>
-            </div>
-          </div>
-
-          <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--value">
-            <label>Scale</label>
-            <div class="form-fields">
-              <input type="range" min="0.1" max="3" step="0.05" bind:value={row.scale} on:input={(e) => setRowScale(row, Number((e.currentTarget as HTMLInputElement).value))} />
-              <input type="number" min="0.1" max="3" step="0.05" bind:value={row.scale} on:input={(e) => setRowScale(row, Number((e.currentTarget as HTMLInputElement).value))} />
+              <input type="text" value={row.image} readonly />
+              <button
+                type="button"
+                class="sf2e-token-state-editor__icon-button"
+                on:click={() => openTokenStateImageConfig(index)}
+                title="Configure image"
+              >
+                <i class="fa-solid fa-gear"></i>
+              </button>
             </div>
           </div>
 
           <div class="sf2e-token-state-editor__cell sf2e-token-state-editor__cell--actions">
-            <button type="button" on:click={() => removeRow("tokenStates", index)}>Remove</button>
+            <button
+              type="button"
+              class="sf2e-token-state-editor__icon-button"
+              title="Remove row"
+              on:click={() => removeRow("tokenStates", index)}
+            >
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </div>
         </article>
       {/each}
@@ -431,7 +509,7 @@
       <button type="button" on:click={addSound}><i class="fa-solid fa-plus"></i></button>
     </div>
     <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--sound">
-      <span>Row</span><span>Type</span><span>Condition</span><span>Sound</span><span>Volume</span><span>Actions</span>
+      <span>Row</span><span>Type</span><span>Condition</span><span>Sound</span>
     </div>
     <div class="sf2e-token-state-editor__rows" data-list="sounds">
       {#each config.sounds as row, index (row.id)}
@@ -531,21 +609,27 @@
           <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--asset">
             <label>Sound</label>
             <div class="form-fields">
-              <input type="text" bind:value={row.src} />
-              <button type="button" on:click={() => pickRowAsset("sounds", index, "audio")}>Browse</button>
-            </div>
-          </div>
-
-          <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--value">
-            <label>Volume</label>
-            <div class="form-fields">
-              <input type="range" min="0" max="1" step="0.05" bind:value={row.volume} on:input={(e) => setRowVolume(row, Number((e.currentTarget as HTMLInputElement).value))} />
-              <input type="number" min="0" max="1" step="0.05" bind:value={row.volume} on:input={(e) => setRowVolume(row, Number((e.currentTarget as HTMLInputElement).value))} />
+              <input type="text" value={row.src} readonly />
+              <button
+                type="button"
+                class="sf2e-token-state-editor__icon-button"
+                on:click={() => openSoundConfig(index)}
+                title="Configure sound"
+              >
+                <i class="fa-solid fa-gear"></i>
+              </button>
             </div>
           </div>
 
           <div class="sf2e-token-state-editor__cell sf2e-token-state-editor__cell--actions">
-            <button type="button" on:click={() => removeRow("sounds", index)}>Remove</button>
+            <button
+              type="button"
+              class="sf2e-token-state-editor__icon-button"
+              title="Remove row"
+              on:click={() => removeRow("sounds", index)}
+            >
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </div>
         </article>
       {/each}
@@ -561,4 +645,104 @@
     <button type="button" on:click={() => onApply(config)}>Apply To Token Config</button>
     <button type="button" on:click={onClose}>Close</button>
   </footer>
+
+  {#if imageConfigModal}
+    <div class="sf2e-token-state-editor__modal-backdrop" on:pointerdown={closeImageConfigModal}>
+      <section
+        class="sf2e-token-state-editor__modal"
+        on:pointerdown|stopPropagation
+      >
+        <header class="sf2e-token-state-editor__modal-header">
+          <h1>Configure Image</h1>
+        </header>
+
+        <div class="sf2e-token-state-editor__modal-content">
+          <div class="form-group">
+            <label>Image Path</label>
+            <div class="form-fields">
+              <input type="text" bind:value={imageConfigModal.image} />
+              <button type="button" on:click={browseImageConfigModal}>Browse</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Scale</label>
+            <div class="form-fields">
+              <input
+                type="range"
+                min="0.1"
+                max="3"
+                step="0.05"
+                bind:value={imageConfigModal.scale}
+                on:input={(e) => (imageConfigModal = { ...imageConfigModal, scale: Number((e.currentTarget as HTMLInputElement).value) })}
+              />
+              <input
+                type="number"
+                min="0.1"
+                max="3"
+                step="0.05"
+                bind:value={imageConfigModal.scale}
+                on:input={(e) => (imageConfigModal = { ...imageConfigModal, scale: Number((e.currentTarget as HTMLInputElement).value) })}
+              />
+            </div>
+          </div>
+
+          <footer class="sf2e-token-state-editor__modal-footer">
+            <button type="button" on:click={saveImageConfigModal}>Save Configuration</button>
+            <button type="button" on:click={closeImageConfigModal}>Cancel</button>
+          </footer>
+        </div>
+      </section>
+    </div>
+  {/if}
+
+  {#if soundConfigModal}
+    <div class="sf2e-token-state-editor__modal-backdrop" on:pointerdown={closeSoundConfigModal}>
+      <section
+        class="sf2e-token-state-editor__modal"
+        on:pointerdown|stopPropagation
+      >
+        <header class="sf2e-token-state-editor__modal-header">
+          <h1>Configure Sound</h1>
+        </header>
+
+        <div class="sf2e-token-state-editor__modal-content">
+          <div class="form-group">
+            <label>Sound Path</label>
+            <div class="form-fields">
+              <input type="text" bind:value={soundConfigModal.src} />
+              <button type="button" on:click={browseSoundConfigModal}>Browse</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Volume</label>
+            <div class="form-fields">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                bind:value={soundConfigModal.volume}
+                on:input={(e) => (soundConfigModal = { ...soundConfigModal, volume: Number((e.currentTarget as HTMLInputElement).value) })}
+              />
+              <input
+                type="number"
+                min="0"
+                max="1"
+                step="0.05"
+                bind:value={soundConfigModal.volume}
+                on:input={(e) => (soundConfigModal = { ...soundConfigModal, volume: Number((e.currentTarget as HTMLInputElement).value) })}
+              />
+            </div>
+          </div>
+
+          <footer class="sf2e-token-state-editor__modal-footer">
+            <button type="button" on:click={saveSoundConfigModal}>Save Configuration</button>
+            <button type="button" on:click={closeSoundConfigModal}>Cancel</button>
+          </footer>
+        </div>
+      </section>
+    </div>
+  {/if}
 </section>

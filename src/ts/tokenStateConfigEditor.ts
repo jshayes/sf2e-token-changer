@@ -200,8 +200,8 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
 ) {
   static override DEFAULT_OPTIONS = {
     classes: ["sf2e-token-state-config-editor-app"],
-    position: { width: 1380, height: 760 },
-    window: { title: "Token State Config Editor", resizable: true },
+    position: { width: 1000, height: 760 },
+    window: { title: "Token State Config Editor", resizable: false },
   };
 
   static override PARTS = {
