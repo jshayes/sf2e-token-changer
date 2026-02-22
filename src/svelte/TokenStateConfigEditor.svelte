@@ -38,7 +38,6 @@
   let config: TokenStateUiConfig = deepClone(initialConfig);
   let dragState: { list: EditorRowList; index: number } | null = null;
   let conditionOptions: ConditionOption[] = getConditionOptions();
-  let openConditionPickerKey: string | null = null;
   let imageConfigModal: ImageConfigModalState | null = null;
   let soundConfigModal: SoundConfigModalState | null = null;
   let tokenStateConditionsConfigModal: TokenStateConditionsConfigModalState | null = null;
@@ -139,19 +138,6 @@
     }));
   }
 
-  function pickerKey(list: EditorRowList, index: number): string {
-    return `${list}:${index}`;
-  }
-
-  function toggleConditionPicker(list: EditorRowList, index: number): void {
-    const key = pickerKey(list, index);
-    openConditionPickerKey = openConditionPickerKey === key ? null : key;
-  }
-
-  function closeConditionPicker(): void {
-    openConditionPickerKey = null;
-  }
-
   function openDefaultImageConfig(): void {
     imageConfigModal = {
       target: { kind: "default" },
@@ -202,7 +188,6 @@
 
   function closeTokenStateConditionsConfigModal(): void {
     tokenStateConditionsConfigModal = null;
-    openConditionPickerKey = null;
   }
 
   function openSoundConditionsConfig(index: number): void {
@@ -217,54 +202,6 @@
 
   function closeSoundConditionsConfigModal(): void {
     soundConditionsConfigModal = null;
-    openConditionPickerKey = null;
-  }
-
-  function addTokenStateConditionModalRow(): void {
-    if (!tokenStateConditionsConfigModal) return;
-    tokenStateConditionsConfigModal = {
-      ...tokenStateConditionsConfigModal,
-      conditions: [
-        ...tokenStateConditionsConfigModal.conditions,
-        defaultCondition("hp-percent"),
-      ],
-    };
-  }
-
-  function removeTokenStateConditionModalRow(conditionIndex: number): void {
-    if (!tokenStateConditionsConfigModal) return;
-    const conditions = [...tokenStateConditionsConfigModal.conditions];
-    conditions.splice(conditionIndex, 1);
-    tokenStateConditionsConfigModal = {
-      ...tokenStateConditionsConfigModal,
-      conditions: conditions.length > 0 ? conditions : [defaultCondition("hp-percent")],
-    };
-    if (openConditionPickerKey?.startsWith("token-state-modal:")) {
-      openConditionPickerKey = null;
-    }
-  }
-
-  function setTokenStateConditionModalType(conditionIndex: number, type: ConditionType): void {
-    if (!tokenStateConditionsConfigModal) return;
-    const conditions = [...tokenStateConditionsConfigModal.conditions];
-    if (!conditions[conditionIndex]) return;
-    conditions[conditionIndex] = defaultCondition(type);
-    tokenStateConditionsConfigModal = { ...tokenStateConditionsConfigModal, conditions };
-    if (openConditionPickerKey === `token-state-modal:${conditionIndex}`) {
-      openConditionPickerKey = null;
-    }
-  }
-
-  function updateTokenStateConditionModalCondition(
-    conditionIndex: number,
-    updater: (condition: UiCondition) => void,
-  ): void {
-    if (!tokenStateConditionsConfigModal) return;
-    const conditions = [...tokenStateConditionsConfigModal.conditions];
-    const condition = conditions[conditionIndex];
-    if (!condition) return;
-    updater(condition);
-    tokenStateConditionsConfigModal = { ...tokenStateConditionsConfigModal, conditions };
   }
 
   function saveTokenStateConditionsConfigModal(): void {
@@ -277,7 +214,6 @@
         : [defaultCondition("hp-percent")];
     updateConfig();
     tokenStateConditionsConfigModal = null;
-    openConditionPickerKey = null;
   }
 
   function saveSoundConditionsConfigModal(): void {
@@ -288,7 +224,6 @@
     row.conditions = deepClone(soundConditionsConfigModal.conditions);
     updateConfig();
     soundConditionsConfigModal = null;
-    openConditionPickerKey = null;
   }
 
   async function browseImageConfigModal(): Promise<void> {
@@ -481,14 +416,8 @@
       {conditionTypeOptions}
       {numericOperatorOptions}
       {conditionOptions}
-      {openConditionPickerKey}
-      setOpenConditionPickerKey={(key) => (openConditionPickerKey = key)}
       {conditionDisplayText}
       onClose={closeTokenStateConditionsConfigModal}
-      onAddCondition={addTokenStateConditionModalRow}
-      onSetConditionType={setTokenStateConditionModalType}
-      onUpdateCondition={updateTokenStateConditionModalCondition}
-      onRemoveCondition={removeTokenStateConditionModalRow}
       onSave={saveTokenStateConditionsConfigModal}
     />
   {/if}
