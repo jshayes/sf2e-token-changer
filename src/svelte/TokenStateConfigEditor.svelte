@@ -1,6 +1,9 @@
 <script lang="ts">
-  import ModalShell from "./components/ModalShell.svelte";
+  import ImageConfigModal from "./components/ImageConfigModal.svelte";
+  import SoundConditionsConfigModal from "./components/SoundConditionsConfigModal.svelte";
+  import SoundConfigModal from "./components/SoundConfigModal.svelte";
   import SoundRow from "./components/SoundRow.svelte";
+  import TokenStateConditionsModal from "./components/TokenStateConditionsModal.svelte";
   import TokenStateRow from "./components/TokenStateRow.svelte";
 
   type NumericOperator = "<" | "<=" | ">" | ">=";
@@ -619,596 +622,58 @@
   </footer>
 
   {#if imageConfigModal}
-    <ModalShell title="Configure Image" onClose={closeImageConfigModal}>
-          <div class="form-group">
-            <label>Image Path</label>
-            <div class="form-fields">
-              <input type="text" bind:value={imageConfigModal.image} />
-              <button type="button" on:click={browseImageConfigModal}>Browse</button>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Scale</label>
-            <div class="form-fields">
-              <input
-                type="range"
-                min="0.1"
-                max="3"
-                step="0.05"
-                bind:value={imageConfigModal.scale}
-                on:input={(e) => (imageConfigModal = { ...imageConfigModal, scale: Number((e.currentTarget as HTMLInputElement).value) })}
-              />
-              <input
-                type="number"
-                min="0.1"
-                max="3"
-                step="0.05"
-                bind:value={imageConfigModal.scale}
-                on:input={(e) => (imageConfigModal = { ...imageConfigModal, scale: Number((e.currentTarget as HTMLInputElement).value) })}
-              />
-            </div>
-          </div>
-
-          <footer class="sf2e-token-state-editor__modal-footer">
-            <button type="button" on:click={saveImageConfigModal}>Save Configuration</button>
-            <button type="button" on:click={closeImageConfigModal}>Cancel</button>
-          </footer>
-    </ModalShell>
+    <ImageConfigModal
+      bind:modal={imageConfigModal}
+      onClose={closeImageConfigModal}
+      onBrowse={browseImageConfigModal}
+      onSave={saveImageConfigModal}
+    />
   {/if}
 
   {#if tokenStateConditionsConfigModal}
-    <ModalShell title="Configure Conditions" wide={true} onClose={closeTokenStateConditionsConfigModal}>
-          <div class="sf2e-token-state-editor__section-header">
-            <h3>Conditions</h3>
-            <button type="button" title="Add condition" on:click={addTokenStateConditionModalRow}>
-              <i class="fa-solid fa-plus"></i>
-            </button>
-          </div>
-
-          <div class="sf2e-token-state-editor__condition-modal-header">
-            <span>Type</span>
-            <span>Condition Config</span>
-            <span>Actions</span>
-          </div>
-
-          <div class="sf2e-token-state-editor__condition-modal-rows">
-            {#each tokenStateConditionsConfigModal.conditions as condition, conditionIndex}
-              <div class="sf2e-token-state-editor__condition-modal-row">
-                <div class="form-group">
-                  <label>Type</label>
-                  <div class="form-fields">
-                    <select
-                      value={condition.type}
-                      on:change={(e) => setTokenStateConditionModalType(conditionIndex, (e.currentTarget as HTMLSelectElement).value as ConditionType)}
-                    >
-                      {#each conditionTypeOptions as option}
-                        <option value={option.value}>{option.label}</option>
-                      {/each}
-                    </select>
-                  </div>
-                </div>
-
-                <div class="sf2e-token-state-editor__condition-modal-config">
-                  {#if condition.type === "hp-percent" || condition.type === "hp-value"}
-                    <div class="form-group">
-                      <label>Operator</label>
-                      <div class="form-fields">
-                        <select
-                          value={condition.operator}
-                          on:change={(e) =>
-                            updateTokenStateConditionModalCondition(conditionIndex, (c) => {
-                              if (!("operator" in c)) return;
-                              if (c.type === "status-effect") return;
-                              const value = (e.currentTarget as HTMLSelectElement).value;
-                              if (value === "<" || value === "<=" || value === ">" || value === ">=") c.operator = value;
-                            })}
-                        >
-                          {#each numericOperatorOptions as option}
-                            <option value={option.value}>{option.label}</option>
-                          {/each}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div class="form-group">
-                      <label>Value</label>
-                      <div class="form-fields">
-                        {#if condition.type === "hp-percent"}
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            bind:value={condition.value}
-                            on:input={(e) =>
-                              updateTokenStateConditionModalCondition(conditionIndex, (c) => {
-                                const value = Number((e.currentTarget as HTMLInputElement).value);
-                                if (c.type === "hp-percent") c.value = clamp(value, 0, 1);
-                              })}
-                          />
-                        {/if}
-                        <input
-                          type="number"
-                          min={condition.type === "hp-percent" ? 0 : undefined}
-                          max={condition.type === "hp-percent" ? 1 : undefined}
-                          step={condition.type === "hp-percent" ? 0.01 : 1}
-                          bind:value={condition.value}
-                          on:input={(e) =>
-                            updateTokenStateConditionModalCondition(conditionIndex, (c) => {
-                              const value = Number((e.currentTarget as HTMLInputElement).value);
-                              if (c.type === "hp-percent") c.value = clamp(value, 0, 1);
-                              if (c.type === "hp-value") c.value = Number.isFinite(value) ? value : 0;
-                            })}
-                        />
-                      </div>
-                    </div>
-                  {:else if condition.type === "in-combat"}
-                    <div class="form-group">
-                      <label>In Combat</label>
-                      <div class="form-fields">
-                        <select
-                          value={String(condition.value)}
-                          on:change={(e) =>
-                            updateTokenStateConditionModalCondition(conditionIndex, (c) => {
-                              if (c.type !== "in-combat") return;
-                              c.value = (e.currentTarget as HTMLSelectElement).value === "true";
-                            })}
-                        >
-                          <option value="true">Yes</option>
-                          <option value="false">No</option>
-                        </select>
-                      </div>
-                    </div>
-                  {:else if condition.type === "status-effect"}
-                    <div class="form-group">
-                      <label>Operator</label>
-                      <div class="form-fields">
-                        <select
-                          class="sf2e-token-state-editor__status-operator-select"
-                          value={condition.operator}
-                          on:change={(e) =>
-                            updateTokenStateConditionModalCondition(conditionIndex, (c) => {
-                              if (c.type !== "status-effect") return;
-                              c.operator = (e.currentTarget as HTMLSelectElement).value === "all-of" ? "all-of" : "any-of";
-                            })}
-                        >
-                          <option value="any-of">Any Of</option>
-                          <option value="all-of">All Of</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label>Status Slugs</label>
-                      <div class="form-fields">
-                        <div class="sf2e-token-state-editor__multiselect" on:pointerdown|stopPropagation>
-                          <div class="form-fields">
-                            <input
-                              type="text"
-                              readonly
-                              value={conditionDisplayText(condition.value)}
-                              title={condition.value.join(", ")}
-                            />
-                            <button
-                              type="button"
-                              class="sf2e-token-state-editor__icon-button"
-                              title="Select conditions"
-                              on:pointerdown|stopPropagation|preventDefault={() => (openConditionPickerKey = openConditionPickerKey === `token-state-modal:${conditionIndex}` ? null : `token-state-modal:${conditionIndex}`)}
-                            >
-                              <i class="fa-solid fa-gear"></i>
-                            </button>
-                          </div>
-                          {#if openConditionPickerKey === `token-state-modal:${conditionIndex}`}
-                            <div class="sf2e-token-state-editor__multiselect-popover">
-                              {#each conditionOptions as option}
-                                <label class="sf2e-token-state-editor__multiselect-option">
-                                  <input
-                                    type="checkbox"
-                                    checked={condition.value.includes(option.slug)}
-                                    on:change={() =>
-                                      updateTokenStateConditionModalCondition(conditionIndex, (c) => {
-                                        if (c.type !== "status-effect") return;
-                                        toggleStatusConditionValue(c, option.slug);
-                                      })}
-                                  />
-                                  <span>{option.name}</span>
-                                </label>
-                              {/each}
-                            </div>
-                          {/if}
-                        </div>
-                      </div>
-                    </div>
-                  {/if}
-                </div>
-
-                <div class="sf2e-token-state-editor__condition-modal-row-actions">
-                  <button
-                    type="button"
-                    class="sf2e-token-state-editor__icon-button"
-                    title="Remove condition"
-                    on:click={() => removeTokenStateConditionModalRow(conditionIndex)}
-                  >
-                    <i class="fa-solid fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-            {/each}
-          </div>
-
-          <footer class="sf2e-token-state-editor__modal-footer">
-            <button type="button" on:click={saveTokenStateConditionsConfigModal}>Save Configuration</button>
-            <button type="button" on:click={closeTokenStateConditionsConfigModal}>Cancel</button>
-          </footer>
-    </ModalShell>
+    <TokenStateConditionsModal
+      bind:modal={tokenStateConditionsConfigModal}
+      {conditionTypeOptions}
+      {numericOperatorOptions}
+      {conditionOptions}
+      {openConditionPickerKey}
+      setOpenConditionPickerKey={(key) => (openConditionPickerKey = key)}
+      {conditionDisplayText}
+      onClose={closeTokenStateConditionsConfigModal}
+      onAddCondition={addTokenStateConditionModalRow}
+      onSetConditionType={setTokenStateConditionModalType}
+      onUpdateCondition={updateTokenStateConditionModalCondition}
+      onRemoveCondition={removeTokenStateConditionModalRow}
+      onSave={saveTokenStateConditionsConfigModal}
+    />
   {/if}
 
   {#if soundConditionsConfigModal}
-    <ModalShell title="Configure Sound Trigger & Conditions" wide={true} onClose={closeSoundConditionsConfigModal}>
-          <div class="sf2e-token-state-editor__section-header">
-            <h3>Trigger</h3>
-          </div>
-
-          <div class="sf2e-token-state-editor__condition-modal-header">
-            <span>Type</span>
-            <span>Trigger Config</span>
-          </div>
-          <div class="sf2e-token-state-editor__condition-modal-rows">
-            <div class="sf2e-token-state-editor__condition-modal-row">
-              <div class="form-group">
-                <label>Type</label>
-                <div class="form-fields">
-                  <select
-                    value={soundConditionsConfigModal.trigger.type}
-                    on:change={(e) => setSoundTriggerModalType((e.currentTarget as HTMLSelectElement).value as ConditionType)}
-                  >
-                    {#each conditionTypeOptions as option}
-                      <option value={option.value}>{option.label}</option>
-                    {/each}
-                  </select>
-                </div>
-              </div>
-
-              <div class="sf2e-token-state-editor__condition-modal-config">
-                {#if soundConditionsConfigModal.trigger.type === "hp-percent" || soundConditionsConfigModal.trigger.type === "hp-value"}
-                  <div class="form-group">
-                    <label>Operator</label>
-                    <div class="form-fields">
-                      <select
-                        value={soundConditionsConfigModal.trigger.operator}
-                        on:change={(e) =>
-                          updateSoundTriggerModal((c) => {
-                            if (!("operator" in c) || c.type === "status-effect") return;
-                            const value = (e.currentTarget as HTMLSelectElement).value;
-                            if (value === "<" || value === "<=" || value === ">" || value === ">=") c.operator = value;
-                          })}
-                      >
-                        {#each numericOperatorOptions as option}
-                          <option value={option.value}>{option.label}</option>
-                        {/each}
-                      </select>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label>Value</label>
-                    <div class="form-fields">
-                      {#if soundConditionsConfigModal.trigger.type === "hp-percent"}
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.01"
-                          bind:value={soundConditionsConfigModal.trigger.value}
-                          on:input={(e) =>
-                            updateSoundTriggerModal((c) => {
-                              if (c.type !== "hp-percent") return;
-                              c.value = clamp(Number((e.currentTarget as HTMLInputElement).value), 0, 1);
-                            })}
-                        />
-                      {/if}
-                      <input
-                        type="number"
-                        min={soundConditionsConfigModal.trigger.type === "hp-percent" ? 0 : undefined}
-                        max={soundConditionsConfigModal.trigger.type === "hp-percent" ? 1 : undefined}
-                        step={soundConditionsConfigModal.trigger.type === "hp-percent" ? 0.01 : 1}
-                        bind:value={soundConditionsConfigModal.trigger.value}
-                        on:input={(e) =>
-                          updateSoundTriggerModal((c) => {
-                            const value = Number((e.currentTarget as HTMLInputElement).value);
-                            if (c.type === "hp-percent") c.value = clamp(value, 0, 1);
-                            if (c.type === "hp-value") c.value = Number.isFinite(value) ? value : 0;
-                          })}
-                      />
-                    </div>
-                  </div>
-                {:else if soundConditionsConfigModal.trigger.type === "in-combat"}
-                  <div class="form-group">
-                    <label>In Combat</label>
-                    <div class="form-fields">
-                      <select
-                        value={String(soundConditionsConfigModal.trigger.value)}
-                        on:change={(e) =>
-                          updateSoundTriggerModal((c) => {
-                            if (c.type !== "in-combat") return;
-                            c.value = (e.currentTarget as HTMLSelectElement).value === "true";
-                          })}
-                      >
-                        <option value="true">Yes</option>
-                        <option value="false">No</option>
-                      </select>
-                    </div>
-                  </div>
-                {:else if soundConditionsConfigModal.trigger.type === "status-effect"}
-                  <div class="form-group">
-                    <label>Operator</label>
-                    <div class="form-fields">
-                      <select
-                        class="sf2e-token-state-editor__status-operator-select"
-                        value={soundConditionsConfigModal.trigger.operator}
-                        on:change={(e) =>
-                          updateSoundTriggerModal((c) => {
-                            if (c.type !== "status-effect") return;
-                            c.operator = (e.currentTarget as HTMLSelectElement).value === "all-of" ? "all-of" : "any-of";
-                          })}
-                      >
-                        <option value="any-of">Any Of</option>
-                        <option value="all-of">All Of</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <label>Status Slugs</label>
-                    <div class="form-fields">
-                      <div class="sf2e-token-state-editor__multiselect" on:pointerdown|stopPropagation>
-                        <div class="form-fields">
-                          <input type="text" readonly value={conditionDisplayText(soundConditionsConfigModal.trigger.value)} title={soundConditionsConfigModal.trigger.value.join(", ")} />
-                          <button
-                            type="button"
-                            class="sf2e-token-state-editor__icon-button"
-                            title="Select conditions"
-                            on:pointerdown|stopPropagation|preventDefault={() => (openConditionPickerKey = openConditionPickerKey === "sound-modal:trigger" ? null : "sound-modal:trigger")}
-                          >
-                            <i class="fa-solid fa-gear"></i>
-                          </button>
-                        </div>
-                        {#if openConditionPickerKey === "sound-modal:trigger"}
-                          <div class="sf2e-token-state-editor__multiselect-popover">
-                            {#each conditionOptions as option}
-                              <label class="sf2e-token-state-editor__multiselect-option">
-                                <input
-                                  type="checkbox"
-                                  checked={soundConditionsConfigModal.trigger.value.includes(option.slug)}
-                                  on:change={() =>
-                                    updateSoundTriggerModal((c) => {
-                                      if (c.type !== "status-effect") return;
-                                      toggleStatusConditionValue(c, option.slug);
-                                    })}
-                                />
-                                <span>{option.name}</span>
-                              </label>
-                            {/each}
-                          </div>
-                        {/if}
-                      </div>
-                    </div>
-                  </div>
-                {/if}
-              </div>
-
-              <div class="sf2e-token-state-editor__condition-modal-row-actions"></div>
-            </div>
-          </div>
-
-          <div class="sf2e-token-state-editor__section-header" style="margin-top: 0.75rem;">
-            <h3>Optional Conditions</h3>
-            <button type="button" title="Add condition" on:click={addSoundConditionModalRow}>
-              <i class="fa-solid fa-plus"></i>
-            </button>
-          </div>
-
-          <div class="sf2e-token-state-editor__condition-modal-header">
-            <span>Type</span>
-            <span>Condition Config</span>
-            <span>Actions</span>
-          </div>
-          <div class="sf2e-token-state-editor__condition-modal-rows">
-            {#each soundConditionsConfigModal.conditions as condition, conditionIndex}
-              <div class="sf2e-token-state-editor__condition-modal-row">
-                <div class="form-group">
-                  <label>Type</label>
-                  <div class="form-fields">
-                    <select
-                      value={condition.type}
-                      on:change={(e) => setSoundConditionModalType(conditionIndex, (e.currentTarget as HTMLSelectElement).value as ConditionType)}
-                    >
-                      {#each conditionTypeOptions as option}
-                        <option value={option.value}>{option.label}</option>
-                      {/each}
-                    </select>
-                  </div>
-                </div>
-                <div class="sf2e-token-state-editor__condition-modal-config">
-                  {#if condition.type === "hp-percent" || condition.type === "hp-value"}
-                    <div class="form-group">
-                      <label>Operator</label>
-                      <div class="form-fields">
-                        <select
-                          value={condition.operator}
-                          on:change={(e) =>
-                            updateSoundConditionModalCondition(conditionIndex, (c) => {
-                              if (!("operator" in c) || c.type === "status-effect") return;
-                              const value = (e.currentTarget as HTMLSelectElement).value;
-                              if (value === "<" || value === "<=" || value === ">" || value === ">=") c.operator = value;
-                            })}
-                        >
-                          {#each numericOperatorOptions as option}
-                            <option value={option.value}>{option.label}</option>
-                          {/each}
-                        </select>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label>Value</label>
-                      <div class="form-fields">
-                        {#if condition.type === "hp-percent"}
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            bind:value={condition.value}
-                            on:input={(e) =>
-                              updateSoundConditionModalCondition(conditionIndex, (c) => {
-                                if (c.type !== "hp-percent") return;
-                                c.value = clamp(Number((e.currentTarget as HTMLInputElement).value), 0, 1);
-                              })}
-                          />
-                        {/if}
-                        <input
-                          type="number"
-                          min={condition.type === "hp-percent" ? 0 : undefined}
-                          max={condition.type === "hp-percent" ? 1 : undefined}
-                          step={condition.type === "hp-percent" ? 0.01 : 1}
-                          bind:value={condition.value}
-                          on:input={(e) =>
-                            updateSoundConditionModalCondition(conditionIndex, (c) => {
-                              const value = Number((e.currentTarget as HTMLInputElement).value);
-                              if (c.type === "hp-percent") c.value = clamp(value, 0, 1);
-                              if (c.type === "hp-value") c.value = Number.isFinite(value) ? value : 0;
-                            })}
-                        />
-                      </div>
-                    </div>
-                  {:else if condition.type === "in-combat"}
-                    <div class="form-group">
-                      <label>In Combat</label>
-                      <div class="form-fields">
-                        <select
-                          value={String(condition.value)}
-                          on:change={(e) =>
-                            updateSoundConditionModalCondition(conditionIndex, (c) => {
-                              if (c.type !== "in-combat") return;
-                              c.value = (e.currentTarget as HTMLSelectElement).value === "true";
-                            })}
-                        >
-                          <option value="true">Yes</option>
-                          <option value="false">No</option>
-                        </select>
-                      </div>
-                    </div>
-                  {:else if condition.type === "status-effect"}
-                    <div class="form-group">
-                      <label>Operator</label>
-                      <div class="form-fields">
-                        <select
-                          class="sf2e-token-state-editor__status-operator-select"
-                          value={condition.operator}
-                          on:change={(e) =>
-                            updateSoundConditionModalCondition(conditionIndex, (c) => {
-                              if (c.type !== "status-effect") return;
-                              c.operator = (e.currentTarget as HTMLSelectElement).value === "all-of" ? "all-of" : "any-of";
-                            })}
-                        >
-                          <option value="any-of">Any Of</option>
-                          <option value="all-of">All Of</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label>Status Slugs</label>
-                      <div class="form-fields">
-                        <div class="sf2e-token-state-editor__multiselect" on:pointerdown|stopPropagation>
-                          <div class="form-fields">
-                            <input type="text" readonly value={conditionDisplayText(condition.value)} title={condition.value.join(", ")} />
-                            <button
-                              type="button"
-                              class="sf2e-token-state-editor__icon-button"
-                              title="Select conditions"
-                              on:pointerdown|stopPropagation|preventDefault={() => (openConditionPickerKey = openConditionPickerKey === `sound-modal:condition:${conditionIndex}` ? null : `sound-modal:condition:${conditionIndex}`)}
-                            >
-                              <i class="fa-solid fa-gear"></i>
-                            </button>
-                          </div>
-                          {#if openConditionPickerKey === `sound-modal:condition:${conditionIndex}`}
-                            <div class="sf2e-token-state-editor__multiselect-popover">
-                              {#each conditionOptions as option}
-                                <label class="sf2e-token-state-editor__multiselect-option">
-                                  <input
-                                    type="checkbox"
-                                    checked={condition.value.includes(option.slug)}
-                                    on:change={() =>
-                                      updateSoundConditionModalCondition(conditionIndex, (c) => {
-                                        if (c.type !== "status-effect") return;
-                                        toggleStatusConditionValue(c, option.slug);
-                                      })}
-                                  />
-                                  <span>{option.name}</span>
-                                </label>
-                              {/each}
-                            </div>
-                          {/if}
-                        </div>
-                      </div>
-                    </div>
-                  {/if}
-                </div>
-                <div class="sf2e-token-state-editor__condition-modal-row-actions">
-                  <button
-                    type="button"
-                    class="sf2e-token-state-editor__icon-button"
-                    title="Remove condition"
-                    on:click={() => removeSoundConditionModalRow(conditionIndex)}
-                  >
-                    <i class="fa-solid fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-            {/each}
-          </div>
-
-          <footer class="sf2e-token-state-editor__modal-footer">
-            <button type="button" on:click={saveSoundConditionsConfigModal}>Save Configuration</button>
-            <button type="button" on:click={closeSoundConditionsConfigModal}>Cancel</button>
-          </footer>
-    </ModalShell>
+    <SoundConditionsConfigModal
+      bind:modal={soundConditionsConfigModal}
+      {conditionTypeOptions}
+      {numericOperatorOptions}
+      {conditionOptions}
+      {openConditionPickerKey}
+      setOpenConditionPickerKey={(key) => (openConditionPickerKey = key)}
+      {conditionDisplayText}
+      onClose={closeSoundConditionsConfigModal}
+      onSetTriggerType={setSoundTriggerModalType}
+      onUpdateTrigger={updateSoundTriggerModal}
+      onAddCondition={addSoundConditionModalRow}
+      onSetConditionType={setSoundConditionModalType}
+      onUpdateCondition={updateSoundConditionModalCondition}
+      onRemoveCondition={removeSoundConditionModalRow}
+      onSave={saveSoundConditionsConfigModal}
+    />
   {/if}
 
   {#if soundConfigModal}
-    <ModalShell title="Configure Sound" onClose={closeSoundConfigModal}>
-      <div class="form-group">
-        <label>Sound Path</label>
-        <div class="form-fields">
-          <input type="text" bind:value={soundConfigModal.src} />
-          <button type="button" on:click={browseSoundConfigModal}>Browse</button>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Volume</label>
-        <div class="form-fields">
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            bind:value={soundConfigModal.volume}
-            on:input={(e) => (soundConfigModal = { ...soundConfigModal, volume: Number((e.currentTarget as HTMLInputElement).value) })}
-          />
-          <input
-            type="number"
-            min="0"
-            max="1"
-            step="0.05"
-            bind:value={soundConfigModal.volume}
-            on:input={(e) => (soundConfigModal = { ...soundConfigModal, volume: Number((e.currentTarget as HTMLInputElement).value) })}
-          />
-        </div>
-      </div>
-
-      <footer class="sf2e-token-state-editor__modal-footer">
-        <button type="button" on:click={saveSoundConfigModal}>Save Configuration</button>
-        <button type="button" on:click={closeSoundConfigModal}>Cancel</button>
-      </footer>
-    </ModalShell>
+    <SoundConfigModal
+      bind:modal={soundConfigModal}
+      onClose={closeSoundConfigModal}
+      onBrowse={browseSoundConfigModal}
+      onSave={saveSoundConfigModal}
+    />
   {/if}
 </section>
