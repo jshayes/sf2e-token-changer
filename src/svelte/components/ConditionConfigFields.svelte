@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import type { ConditionOption, NumericOperator, UiCondition } from "../helpers/conditions";
   import { clamp } from "../helpers/conditions";
 
@@ -12,6 +13,8 @@
   export let onUpdate: (updater: (condition: UiCondition) => void) => void;
 
   let multiselectRoot: HTMLDivElement | null = null;
+  let pickerButton: HTMLButtonElement | null = null;
+  let popoverElement: HTMLDivElement | null = null;
   let statusSearch = "";
 
   $: filteredConditionOptions = conditionOptions.filter((option) => {
@@ -27,16 +30,78 @@
     statusSearch = "";
   }
 
+  $: if (openConditionPickerKey === pickerKey) {
+    void tick().then(() => {
+      updatePopoverPosition();
+    });
+  }
+
+  function portalToBody(node: HTMLElement): { destroy: () => void } {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        if (node.parentNode === document.body) {
+          document.body.removeChild(node);
+        }
+      },
+    };
+  }
+
+  function updatePopoverPosition(): void {
+    if (openConditionPickerKey !== pickerKey) return;
+    if (!pickerButton || !popoverElement) return;
+
+    const margin = 8;
+    const gap = 4;
+    const buttonRect = pickerButton.getBoundingClientRect();
+    const popoverRect = popoverElement.getBoundingClientRect();
+    const popoverWidth = Math.ceil(popoverRect.width || 260);
+    const popoverHeight = Math.ceil(popoverRect.height || 220);
+
+    let left = Math.round(buttonRect.right - popoverWidth);
+    left = Math.max(margin, Math.min(left, window.innerWidth - popoverWidth - margin));
+
+    const spaceBelow = window.innerHeight - buttonRect.bottom - margin;
+    const spaceAbove = buttonRect.top - margin;
+    const shouldOpenUp = spaceBelow < popoverHeight && spaceAbove > spaceBelow;
+
+    let top = shouldOpenUp
+      ? Math.round(buttonRect.top - popoverHeight - gap)
+      : Math.round(buttonRect.bottom + gap);
+
+    top = Math.max(margin, Math.min(top, window.innerHeight - popoverHeight - margin));
+
+    const themeSource = multiselectRoot ?? pickerButton;
+    const computed = getComputedStyle(themeSource);
+    for (const cssVar of [
+      "--background",
+      "--color-border",
+      "--color-text-primary",
+      "--color-text-secondary",
+    ]) {
+      const value = computed.getPropertyValue(cssVar);
+      if (value) popoverElement.style.setProperty(cssVar, value);
+    }
+
+    popoverElement.style.left = `${left}px`;
+    popoverElement.style.top = `${top}px`;
+  }
+
   function closePickerOnOutsidePointerDown(event: PointerEvent): void {
     if (openConditionPickerKey !== pickerKey) return;
     const target = event.target;
     if (!(target instanceof Node)) return;
     if (multiselectRoot?.contains(target)) return;
+    if (popoverElement?.contains(target)) return;
     setOpenConditionPickerKey(null);
   }
 </script>
 
-<svelte:window on:pointerdown|capture={closePickerOnOutsidePointerDown} />
+<svelte:window
+  on:pointerdown|capture={closePickerOnOutsidePointerDown}
+  on:resize={updatePopoverPosition}
+  on:scroll|capture={updatePopoverPosition}
+/>
 
 <div class="sf2e-token-state-editor__condition-modal-config">
   {#if condition.type === "hp-percent" || condition.type === "hp-value"}
@@ -145,6 +210,7 @@
             <button
               type="button"
               class="sf2e-token-state-editor__icon-button"
+              bind:this={pickerButton}
               title="Select conditions"
               on:pointerdown|stopPropagation|preventDefault={() => setOpenConditionPickerKey(openConditionPickerKey === pickerKey ? null : pickerKey)}
             >
@@ -152,7 +218,12 @@
             </button>
           </div>
           {#if openConditionPickerKey === pickerKey}
-            <div class="sf2e-token-state-editor__multiselect-popover">
+            <div
+              class="sf2e-token-state-editor__multiselect-popover"
+              bind:this={popoverElement}
+              use:portalToBody
+              on:pointerdown|stopPropagation
+            >
               <div class="sf2e-token-state-editor__multiselect-search">
                 <input
                   type="text"

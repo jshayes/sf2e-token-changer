@@ -241,7 +241,7 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
 ) {
   static override DEFAULT_OPTIONS = {
     classes: ["sf2e-token-state-config-editor-app"],
-    position: { width: 1000, height: 760 },
+    position: { width: 1000, height: 480 },
     window: { title: "Token State Config Editor", resizable: false },
   };
 
@@ -258,6 +258,8 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
   #host: EditorHost;
   #svelteApp: object | null = null;
   #mountedRoot: HTMLElement | null = null;
+  #resizeObserver: ResizeObserver | null = null;
+  #resizeFrame: number | null = null;
 
   constructor(options: {
     config: TokenStateUiConfig;
@@ -321,15 +323,63 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
           this.#openFilePicker(type, current),
       },
     }) as object;
+
+    this.#resizeObserver?.disconnect();
+    this.#resizeObserver = new ResizeObserver(() => {
+      this.#scheduleAutoHeight();
+    });
+    this.#resizeObserver.observe(mountRoot);
+    this.#scheduleAutoHeight();
   }
 
   override async close(options?: unknown): Promise<this> {
+    this.#resizeObserver?.disconnect();
+    this.#resizeObserver = null;
+    if (this.#resizeFrame !== null) {
+      cancelAnimationFrame(this.#resizeFrame);
+      this.#resizeFrame = null;
+    }
     if (this.#svelteApp) {
       await unmount(this.#svelteApp as never);
       this.#svelteApp = null;
       this.#mountedRoot = null;
     }
     return await super.close(options as never);
+  }
+
+  #scheduleAutoHeight(): void {
+    if (this.#resizeFrame !== null) return;
+    this.#resizeFrame = requestAnimationFrame(() => {
+      this.#resizeFrame = null;
+      this.#applyAutoHeight();
+    });
+  }
+
+  #applyAutoHeight(): void {
+    const mountRoot = this.#mountedRoot;
+    const appRoot = this.element;
+    if (!mountRoot || !appRoot) return;
+
+    const mountVisibleHeight = mountRoot.getBoundingClientRect().height;
+    const mountContentHeight = mountRoot.scrollHeight;
+    const appVisibleHeight = appRoot.getBoundingClientRect().height;
+    if (!mountVisibleHeight || !appVisibleHeight) return;
+
+    const chromeHeight = Math.max(
+      0,
+      Math.ceil(appVisibleHeight - mountVisibleHeight),
+    );
+    const desiredHeight = Math.ceil(mountContentHeight + chromeHeight);
+    const maxHeight = Math.max(320, window.innerHeight - 32);
+    const nextHeight = Math.min(maxHeight, Math.max(320, desiredHeight));
+
+    const positioned = this as unknown as {
+      setPosition?: (position: { height?: number }) => void;
+      position?: { height?: number };
+    };
+    const currentHeight = Number(positioned.position?.height ?? 0);
+    if (Math.abs(currentHeight - nextHeight) < 2) return;
+    positioned.setPosition?.({ height: nextHeight });
   }
 
   async #openFilePicker(

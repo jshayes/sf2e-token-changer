@@ -234,12 +234,10 @@
 }
 
 .sf2e-token-state-editor__multiselect-popover {
-  position: absolute;
+  position: fixed;
   display: flex;
   flex-direction: column;
-  z-index: 20;
-  top: calc(100% + 0.25rem);
-  right: 0;
+  z-index: 200;
   width: 260px;
   max-height: 220px;
   padding: 0.35rem;
