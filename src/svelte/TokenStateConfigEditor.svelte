@@ -386,7 +386,7 @@
   </section>
 
   <footer class="sf2e-token-state-editor__footer">
-    <button type="button" on:click={() => onApply(toSerializableConfig(config) as unknown as TokenStateUiConfig)}>Apply To Token Config</button>
+    <button type="button" on:click={() => onApply(toSerializableConfig(config) as unknown as TokenStateUiConfig)}>Save</button>
     <button type="button" on:click={onClose}>Close</button>
   </footer>
 

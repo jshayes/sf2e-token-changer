@@ -15,6 +15,7 @@
   let multiselectRoot: HTMLDivElement | null = null;
   let pickerButton: HTMLButtonElement | null = null;
   let popoverElement: HTMLDivElement | null = null;
+  let searchInput: HTMLInputElement | null = null;
   let statusSearch = "";
 
   $: filteredConditionOptions = conditionOptions.filter((option) => {
@@ -33,6 +34,8 @@
   $: if (openConditionPickerKey === pickerKey) {
     void tick().then(() => {
       updatePopoverPosition();
+      searchInput?.focus();
+      searchInput?.select();
     });
   }
 
@@ -227,6 +230,7 @@
               <div class="sf2e-token-state-editor__multiselect-search">
                 <input
                   type="text"
+                  bind:this={searchInput}
                   placeholder="Search conditions..."
                   bind:value={statusSearch}
                   on:pointerdown|stopPropagation
