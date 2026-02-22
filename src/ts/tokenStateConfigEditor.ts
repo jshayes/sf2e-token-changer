@@ -24,7 +24,9 @@ export type TokenStateImageRuleConfig = {
 
 export type SoundTriggerRuleConfig = {
   id: string;
-  condition: UiCondition;
+  name: string;
+  trigger: UiCondition;
+  conditions: UiCondition[];
   src: string;
   volume: number;
 };
@@ -155,10 +157,25 @@ function normalizeTokenStateRule(raw: unknown): TokenStateImageRuleConfig {
 }
 
 function normalizeSoundRule(raw: unknown): SoundTriggerRuleConfig {
-  const input = (raw ?? {}) as Partial<SoundTriggerRuleConfig>;
+  const input = (raw ?? {}) as Partial<SoundTriggerRuleConfig> & {
+    condition?: unknown;
+    trigger?: unknown;
+    conditions?: unknown;
+  };
+  const normalizedTrigger =
+    input.trigger !== undefined
+      ? normalizeCondition(input.trigger)
+      : input.condition !== undefined
+        ? normalizeCondition(input.condition)
+        : defaultCondition("in-combat");
+  const normalizedConditions = Array.isArray(input.conditions)
+    ? input.conditions.map((condition) => normalizeCondition(condition))
+    : [];
   return {
     id: typeof input.id === "string" && input.id ? input.id : randomId(),
-    condition: normalizeCondition(input.condition),
+    name: typeof input.name === "string" ? input.name : "",
+    trigger: normalizedTrigger,
+    conditions: normalizedConditions,
     src: typeof input.src === "string" ? input.src : "",
     volume: clamp(Number(input.volume ?? 0.8), 0, 1),
   };
