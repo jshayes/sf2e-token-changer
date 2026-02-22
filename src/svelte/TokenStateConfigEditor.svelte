@@ -77,7 +77,13 @@
   function addTokenState(): void {
     config.tokenStates = [
       ...config.tokenStates,
-      { id: randomId(), name: "", conditions: [defaultCondition("hp-percent")], image: "", scale: 1 },
+      {
+        id: randomId(),
+        name: "",
+        conditions: [defaultCondition("hp-percent")],
+        image: "",
+        scale: config.default.scale,
+      },
     ];
   }
 
