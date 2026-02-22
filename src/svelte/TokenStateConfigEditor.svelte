@@ -1,20 +1,17 @@
 <script lang="ts">
+  import {
+    clamp,
+    conditionDisplayText as conditionDisplayTextHelper,
+    conditionTypeOptions,
+    numericOperatorOptions,
+  } from "./helpers/conditions";
+  import type { ConditionOption, ConditionType, UiCondition } from "./helpers/conditions";
   import ImageConfigModal from "./components/ImageConfigModal.svelte";
   import SoundConditionsConfigModal from "./components/SoundConditionsConfigModal.svelte";
   import SoundConfigModal from "./components/SoundConfigModal.svelte";
   import SoundRow from "./components/SoundRow.svelte";
   import TokenStateConditionsModal from "./components/TokenStateConditionsModal.svelte";
   import TokenStateRow from "./components/TokenStateRow.svelte";
-
-  type NumericOperator = "<" | "<=" | ">" | ">=";
-  type StatusOperator = "any-of" | "all-of";
-  type ConditionType = "hp-percent" | "hp-value" | "in-combat" | "status-effect";
-
-  type UiCondition =
-    | { type: "hp-percent"; operator: NumericOperator; value: number }
-    | { type: "hp-value"; operator: NumericOperator; value: number }
-    | { type: "in-combat"; value: boolean }
-    | { type: "status-effect"; operator: StatusOperator; value: string[] };
 
   type TokenStateImageRuleConfig = {
     id: string;
@@ -52,19 +49,6 @@
   type TokenStateConditionsConfigTarget = { index: number };
   type SoundConditionsConfigTarget = { index: number };
 
-  const conditionTypeOptions: Array<{ value: ConditionType; label: string }> = [
-    { value: "hp-percent", label: "HP Percent" },
-    { value: "hp-value", label: "HP Value" },
-    { value: "in-combat", label: "In Combat" },
-    { value: "status-effect", label: "Status Effect" },
-  ];
-
-  const numericOperatorOptions: Array<{ value: NumericOperator; label: string }> = [
-    { value: "<", label: "<" },
-    { value: "<=", label: "<=" },
-    { value: ">", label: ">" },
-    { value: ">=", label: ">=" },
-  ];
 
   export let initialConfig: TokenStateUiConfig;
   export let onApply: (config: TokenStateUiConfig) => void;
@@ -73,7 +57,7 @@
 
   let config: TokenStateUiConfig = deepClone(initialConfig);
   let dragState: { list: EditorRowList; index: number } | null = null;
-  let conditionOptions: Array<{ slug: string; name: string }> = getConditionOptions();
+  let conditionOptions: ConditionOption[] = getConditionOptions();
   let openConditionPickerKey: string | null = null;
   let imageConfigModal:
     | {
@@ -113,11 +97,6 @@
     const utils = (globalThis as { foundry?: { utils?: { randomID?: () => string } } }).foundry?.utils;
     if (utils?.randomID) return utils.randomID();
     return Math.random().toString(36).slice(2, 10);
-  }
-
-  function clamp(value: number, min: number, max: number): number {
-    if (!Number.isFinite(value)) return min;
-    return Math.min(max, Math.max(min, value));
   }
 
   function defaultCondition(type: ConditionType = "hp-percent"): UiCondition {
@@ -186,7 +165,7 @@
     updateConfig();
   }
 
-  function getConditionOptions(): Array<{ slug: string; name: string }> {
+  function getConditionOptions(): ConditionOption[] {
     const pf2eGame = (globalThis as { game?: { pf2e?: unknown } }).game?.pf2e as
       | {
           ConditionManager?: {
@@ -464,38 +443,7 @@
   }
 
   function conditionDisplayText(values: string[]): string {
-    if (values.length === 0) return "Select conditions";
-    const names = values.map(
-      (slug) => conditionOptions.find((option) => option.slug === slug)?.name ?? slug,
-    );
-    return names.join(", ");
-  }
-
-  function formatConditionSummary(condition: UiCondition): string {
-    if (condition.type === "hp-percent") {
-      return `HP % ${condition.operator} ${condition.value}`;
-    }
-    if (condition.type === "hp-value") {
-      return `HP ${condition.operator} ${condition.value}`;
-    }
-    if (condition.type === "in-combat") {
-      return condition.value ? "In Combat: Yes" : "In Combat: No";
-    }
-    const mode = condition.operator === "all-of" ? "all" : "any";
-    return `Status (${mode}): ${conditionDisplayText(condition.value)}`;
-  }
-
-  function tokenStateConditionsSummary(conditions: UiCondition[]): string {
-    if (conditions.length === 0) return "No conditions configured";
-    if (conditions.length === 1) return formatConditionSummary(conditions[0]);
-    return `${conditions.length} conditions configured`;
-  }
-
-  function soundConditionSummary(trigger: UiCondition, conditions: UiCondition[]): string {
-    const triggerText = `Trigger: ${formatConditionSummary(trigger)}`;
-    if (conditions.length === 0) return `${triggerText}; no extra conditions`;
-    if (conditions.length === 1) return `${triggerText}; if ${formatConditionSummary(conditions[0])}`;
-    return `${triggerText}; ${conditions.length} extra conditions`;
+    return conditionDisplayTextHelper(values, conditionOptions);
   }
 
   function startDrag(event: DragEvent, list: EditorRowList, index: number): void {
@@ -572,7 +520,6 @@
         <TokenStateRow
           {row}
           {index}
-          conditionSummary={tokenStateConditionsSummary(row.conditions)}
           onNameInput={updateConfig}
           onOpenConditions={openTokenStateConditionsConfig}
           onOpenImage={openTokenStateImageConfig}
@@ -598,7 +545,6 @@
         <SoundRow
           {row}
           {index}
-          conditionSummary={soundConditionSummary(row.trigger, row.conditions)}
           onNameInput={updateConfig}
           onOpenConditions={openSoundConditionsConfig}
           onOpenSound={openSoundConfig}

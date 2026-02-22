@@ -1,15 +1,7 @@
 <script lang="ts">
   import ConditionConfigFields from "./ConditionConfigFields.svelte";
   import ModalShell from "./ModalShell.svelte";
-
-  type NumericOperator = "<" | "<=" | ">" | ">=";
-  type StatusOperator = "any-of" | "all-of";
-  type ConditionType = "hp-percent" | "hp-value" | "in-combat" | "status-effect";
-  type UiCondition =
-    | { type: "hp-percent"; operator: NumericOperator; value: number }
-    | { type: "hp-value"; operator: NumericOperator; value: number }
-    | { type: "in-combat"; value: boolean }
-    | { type: "status-effect"; operator: StatusOperator; value: string[] };
+  import type { ConditionOption, ConditionType, NumericOperator, UiCondition } from "../helpers/conditions";
 
   type SoundConditionsModalState = {
     target: { index: number };
@@ -20,7 +12,7 @@
   export let modal: SoundConditionsModalState;
   export let conditionTypeOptions: Array<{ value: ConditionType; label: string }>;
   export let numericOperatorOptions: Array<{ value: NumericOperator; label: string }>;
-  export let conditionOptions: Array<{ slug: string; name: string }>;
+  export let conditionOptions: ConditionOption[];
   export let openConditionPickerKey: string | null;
   export let setOpenConditionPickerKey: (key: string | null) => void;
   export let conditionDisplayText: (values: string[]) => string;

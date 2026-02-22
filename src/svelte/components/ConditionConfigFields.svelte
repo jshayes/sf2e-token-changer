@@ -1,25 +1,16 @@
 <script lang="ts">
-  type NumericOperator = "<" | "<=" | ">" | ">=";
-  type StatusOperator = "any-of" | "all-of";
-  type UiCondition =
-    | { type: "hp-percent"; operator: NumericOperator; value: number }
-    | { type: "hp-value"; operator: NumericOperator; value: number }
-    | { type: "in-combat"; value: boolean }
-    | { type: "status-effect"; operator: StatusOperator; value: string[] };
+  import type { ConditionOption, NumericOperator, UiCondition } from "../helpers/conditions";
+  import { clamp } from "../helpers/conditions";
 
   export let condition: UiCondition;
   export let numericOperatorOptions: Array<{ value: NumericOperator; label: string }>;
-  export let conditionOptions: Array<{ slug: string; name: string }>;
+  export let conditionOptions: ConditionOption[];
   export let conditionDisplayText: (values: string[]) => string;
   export let openConditionPickerKey: string | null;
   export let setOpenConditionPickerKey: (key: string | null) => void;
   export let pickerKey: string;
   export let onUpdate: (updater: (condition: UiCondition) => void) => void;
 
-  function clamp(value: number, min: number, max: number): number {
-    if (!Number.isFinite(value)) return min;
-    return Math.min(max, Math.max(min, value));
-  }
 </script>
 
 <div class="sf2e-token-state-editor__condition-modal-config">

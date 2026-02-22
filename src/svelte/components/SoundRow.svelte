@@ -1,11 +1,6 @@
 <script lang="ts">
-  type NumericOperator = "<" | "<=" | ">" | ">=";
-  type StatusOperator = "any-of" | "all-of";
-  type UiCondition =
-    | { type: "hp-percent"; operator: NumericOperator; value: number }
-    | { type: "hp-value"; operator: NumericOperator; value: number }
-    | { type: "in-combat"; value: boolean }
-    | { type: "status-effect"; operator: StatusOperator; value: string[] };
+  import type { UiCondition } from "../helpers/conditions";
+  import { soundConditionSummary } from "../helpers/conditions";
 
   type SoundTriggerRuleConfig = {
     id: string;
@@ -18,7 +13,6 @@
 
   export let row: SoundTriggerRuleConfig;
   export let index: number;
-  export let conditionSummary: string;
   export let onNameInput: () => void;
   export let onOpenConditions: (index: number) => void;
   export let onOpenSound: (index: number) => void;
@@ -54,7 +48,7 @@
   <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--condition">
     <label>Conditions</label>
     <div class="form-fields">
-      <input type="text" value={conditionSummary} readonly />
+      <input type="text" value={soundConditionSummary(row.trigger, row.conditions)} readonly />
       <button
         type="button"
         class="sf2e-token-state-editor__icon-button"
