@@ -16,7 +16,8 @@ type UiCondition =
 
 export type TokenStateImageRuleConfig = {
   id: string;
-  condition: UiCondition;
+  name: string;
+  conditions: UiCondition[];
   image: string;
   scale: number;
 };
@@ -135,10 +136,19 @@ function normalizeCondition(raw: unknown): UiCondition {
 }
 
 function normalizeTokenStateRule(raw: unknown): TokenStateImageRuleConfig {
-  const input = (raw ?? {}) as Partial<TokenStateImageRuleConfig>;
+  const input = (raw ?? {}) as Partial<TokenStateImageRuleConfig> & {
+    condition?: unknown;
+    conditions?: unknown;
+  };
+  const normalizedConditions = Array.isArray(input.conditions)
+    ? input.conditions.map((condition) => normalizeCondition(condition))
+    : input.condition !== undefined
+      ? [normalizeCondition(input.condition)]
+      : [defaultCondition()];
   return {
     id: typeof input.id === "string" && input.id ? input.id : randomId(),
-    condition: normalizeCondition(input.condition),
+    name: typeof input.name === "string" ? input.name : "",
+    conditions: normalizedConditions,
     image: typeof input.image === "string" ? input.image : "",
     scale: clamp(Number(input.scale ?? 1), 0.1, 3),
   };
@@ -246,7 +256,6 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
     const mountRoot = root.querySelector<HTMLElement>(
       '[data-role="token-state-config-editor-mount"]',
     );
-    console.log({ htmlElement, mountRoot });
     if (!mountRoot) return;
     if (this.#mountedRoot === mountRoot && this.#svelteApp) return;
 

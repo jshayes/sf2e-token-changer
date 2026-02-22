@@ -11,7 +11,8 @@
 
   type TokenStateImageRuleConfig = {
     id: string;
-    condition: UiCondition;
+    name: string;
+    conditions: UiCondition[];
     image: string;
     scale: number;
   };
@@ -39,6 +40,7 @@
     | { kind: "default" }
     | { kind: "tokenState"; index: number };
   type SoundConfigTarget = { index: number };
+  type TokenStateConditionsConfigTarget = { index: number };
 
   const conditionTypeOptions: Array<{ value: ConditionType; label: string }> = [
     { value: "hp-percent", label: "HP Percent" },
@@ -77,6 +79,12 @@
         volume: number;
       }
     | null = null;
+  let tokenStateConditionsConfigModal:
+    | {
+        target: TokenStateConditionsConfigTarget;
+        conditions: UiCondition[];
+      }
+    | null = null;
 
   $: jsonPreview = JSON.stringify(config, null, 2);
 
@@ -111,7 +119,7 @@
   function addTokenState(): void {
     config.tokenStates = [
       ...config.tokenStates,
-      { id: randomId(), condition: defaultCondition("hp-percent"), image: "", scale: 1 },
+      { id: randomId(), name: "", conditions: [defaultCondition("hp-percent")], image: "", scale: 1 },
     ];
   }
 
@@ -129,36 +137,37 @@
   }
 
   function setConditionType(list: EditorRowList, index: number, type: ConditionType): void {
-    const rows = [...config[list]];
+    if (list !== "sounds") return;
+    const rows = [...config.sounds];
     const row = rows[index];
     if (!row) return;
     row.condition = defaultCondition(type);
-    config = { ...config, [list]: rows } as TokenStateUiConfig;
+    config = { ...config, sounds: rows };
   }
 
   function updateConfig(): void {
     config = { ...config };
   }
 
-  function setConditionOperator(row: Row, value: string): void {
-    if (!("operator" in row.condition)) return;
-    if (row.condition.type === "status-effect") {
-      row.condition.operator = value === "all-of" ? "all-of" : "any-of";
+  function setUiConditionOperator(condition: UiCondition, value: string): void {
+    if (!("operator" in condition)) return;
+    if (condition.type === "status-effect") {
+      condition.operator = value === "all-of" ? "all-of" : "any-of";
     } else if (value === "<" || value === "<=" || value === ">" || value === ">=") {
-      row.condition.operator = value;
+      condition.operator = value;
     }
     updateConfig();
   }
 
-  function setConditionNumericValue(row: Row, value: number): void {
-    if (row.condition.type === "hp-percent") row.condition.value = clamp(value, 0, 1);
-    if (row.condition.type === "hp-value") row.condition.value = Number.isFinite(value) ? value : 0;
+  function setUiConditionNumericValue(condition: UiCondition, value: number): void {
+    if (condition.type === "hp-percent") condition.value = clamp(value, 0, 1);
+    if (condition.type === "hp-value") condition.value = Number.isFinite(value) ? value : 0;
     updateConfig();
   }
 
-  function setConditionCombatValue(row: Row, value: string): void {
-    if (row.condition.type !== "in-combat") return;
-    row.condition.value = value === "true";
+  function setUiConditionCombatValue(condition: UiCondition, value: string): void {
+    if (condition.type !== "in-combat") return;
+    condition.value = value === "true";
     updateConfig();
   }
 
@@ -229,6 +238,83 @@
     soundConfigModal = null;
   }
 
+  function openTokenStateConditionsConfig(index: number): void {
+    const row = config.tokenStates[index];
+    if (!row) return;
+    tokenStateConditionsConfigModal = {
+      target: { index },
+      conditions:
+        row.conditions.length > 0
+          ? deepClone(row.conditions)
+          : [defaultCondition("hp-percent")],
+    };
+  }
+
+  function closeTokenStateConditionsConfigModal(): void {
+    tokenStateConditionsConfigModal = null;
+    openConditionPickerKey = null;
+  }
+
+  function addTokenStateConditionModalRow(): void {
+    if (!tokenStateConditionsConfigModal) return;
+    tokenStateConditionsConfigModal = {
+      ...tokenStateConditionsConfigModal,
+      conditions: [
+        ...tokenStateConditionsConfigModal.conditions,
+        defaultCondition("hp-percent"),
+      ],
+    };
+  }
+
+  function removeTokenStateConditionModalRow(conditionIndex: number): void {
+    if (!tokenStateConditionsConfigModal) return;
+    const conditions = [...tokenStateConditionsConfigModal.conditions];
+    conditions.splice(conditionIndex, 1);
+    tokenStateConditionsConfigModal = {
+      ...tokenStateConditionsConfigModal,
+      conditions: conditions.length > 0 ? conditions : [defaultCondition("hp-percent")],
+    };
+    if (openConditionPickerKey?.startsWith("token-state-modal:")) {
+      openConditionPickerKey = null;
+    }
+  }
+
+  function setTokenStateConditionModalType(conditionIndex: number, type: ConditionType): void {
+    if (!tokenStateConditionsConfigModal) return;
+    const conditions = [...tokenStateConditionsConfigModal.conditions];
+    if (!conditions[conditionIndex]) return;
+    conditions[conditionIndex] = defaultCondition(type);
+    tokenStateConditionsConfigModal = { ...tokenStateConditionsConfigModal, conditions };
+    if (openConditionPickerKey === `token-state-modal:${conditionIndex}`) {
+      openConditionPickerKey = null;
+    }
+  }
+
+  function updateTokenStateConditionModalCondition(
+    conditionIndex: number,
+    updater: (condition: UiCondition) => void,
+  ): void {
+    if (!tokenStateConditionsConfigModal) return;
+    const conditions = [...tokenStateConditionsConfigModal.conditions];
+    const condition = conditions[conditionIndex];
+    if (!condition) return;
+    updater(condition);
+    tokenStateConditionsConfigModal = { ...tokenStateConditionsConfigModal, conditions };
+  }
+
+  function saveTokenStateConditionsConfigModal(): void {
+    if (!tokenStateConditionsConfigModal) return;
+    const row = config.tokenStates[tokenStateConditionsConfigModal.target.index];
+    if (!row) return;
+    row.conditions =
+      tokenStateConditionsConfigModal.conditions.length > 0
+        ? deepClone(tokenStateConditionsConfigModal.conditions)
+        : [defaultCondition("hp-percent")];
+    updateConfig();
+    tokenStateConditionsConfigModal = null;
+    openConditionPickerKey = null;
+  }
+
   async function browseImageConfigModal(): Promise<void> {
     if (!imageConfigModal) return;
     const selected = await openFilePicker("image", imageConfigModal.image);
@@ -271,13 +357,12 @@
     soundConfigModal = null;
   }
 
-  function toggleStatusCondition(row: Row, slug: string): void {
-    if (row.condition.type !== "status-effect") return;
-    const selected = new Set(row.condition.value);
+  function toggleStatusConditionValue(condition: UiCondition, slug: string): void {
+    if (condition.type !== "status-effect") return;
+    const selected = new Set(condition.value);
     if (selected.has(slug)) selected.delete(slug);
     else selected.add(slug);
-    row.condition.value = Array.from(selected);
-    updateConfig();
+    condition.value = Array.from(selected);
   }
 
   function conditionDisplayText(values: string[]): string {
@@ -289,14 +374,24 @@
     return text.length > 40 ? `${text.slice(0, 37)}...` : text;
   }
 
-  function setDefaultScale(value: number): void {
-    config.default.scale = clamp(value, 0.1, 3);
-    updateConfig();
+  function formatConditionSummary(condition: UiCondition): string {
+    if (condition.type === "hp-percent") {
+      return `HP % ${condition.operator} ${condition.value}`;
+    }
+    if (condition.type === "hp-value") {
+      return `HP ${condition.operator} ${condition.value}`;
+    }
+    if (condition.type === "in-combat") {
+      return condition.value ? "In Combat: Yes" : "In Combat: No";
+    }
+    const mode = condition.operator === "all-of" ? "all" : "any";
+    return `Status (${mode}): ${conditionDisplayText(condition.value)}`;
   }
 
-  function setRowScale(row: TokenStateImageRuleConfig, value: number): void {
-    row.scale = clamp(value, 0.1, 3);
-    updateConfig();
+  function tokenStateConditionsSummary(conditions: UiCondition[]): string {
+    if (conditions.length === 0) return "No conditions configured";
+    if (conditions.length === 1) return formatConditionSummary(conditions[0]);
+    return `${conditions.length} conditions configured`;
   }
 
   function startDrag(event: DragEvent, list: EditorRowList, index: number): void {
@@ -366,7 +461,7 @@
       <button type="button" on:click={addTokenState}><i class="fa-solid fa-plus"></i></button>
     </div>
     <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--token">
-      <span>Row</span><span>Type</span><span>Condition</span><span>Image</span>
+      <span>Row</span><span>Name</span><span>Condition</span><span>Image</span>
     </div>
     <div class="sf2e-token-state-editor__rows" data-list="tokenStates">
       {#each config.tokenStates as row, index (row.id)}
@@ -376,101 +471,25 @@
           </div>
 
           <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--type">
-            <label>State Type</label>
+            <label>Name</label>
             <div class="form-fields">
-              <select value={row.condition.type} on:change={(e) => setConditionType("tokenStates", index, (e.currentTarget as HTMLSelectElement).value as ConditionType)}>
-                {#each conditionTypeOptions as option}
-                  <option value={option.value}>{option.label}</option>
-                {/each}
-              </select>
+              <input type="text" bind:value={row.name} placeholder="e.g. Bloodied In Combat" on:input={updateConfig} />
             </div>
           </div>
 
-          <div class="sf2e-token-state-editor__cell sf2e-token-state-editor__cell--condition">
-            {#if row.condition.type === "hp-percent" || row.condition.type === "hp-value"}
-              <div class="form-group">
-                <label>Operator</label>
-                <div class="form-fields">
-                  <select
-                    value={row.condition.operator}
-                    on:change={(e) => setConditionOperator(row, (e.currentTarget as HTMLSelectElement).value)}
-                  >
-                    {#each numericOperatorOptions as option}
-                      <option value={option.value}>{option.label}</option>
-                    {/each}
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Value</label>
-                <div class="form-fields">
-                  <input
-                    type="number"
-                    min={row.condition.type === "hp-percent" ? 0 : undefined}
-                    max={row.condition.type === "hp-percent" ? 1 : undefined}
-                    step={row.condition.type === "hp-percent" ? 0.01 : 1}
-                    bind:value={row.condition.value}
-                    on:input={(e) => setConditionNumericValue(row, Number((e.currentTarget as HTMLInputElement).value))}
-                  />
-                </div>
-              </div>
-            {:else if row.condition.type === "in-combat"}
-              <div class="form-group">
-                <label>In Combat</label>
-                <div class="form-fields">
-                  <select value={String(row.condition.value)} on:change={(e) => setConditionCombatValue(row, (e.currentTarget as HTMLSelectElement).value)}>
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                  </select>
-                </div>
-              </div>
-            {:else if row.condition.type === "status-effect"}
-              <div class="form-group">
-                <label>Operator</label>
-                <div class="form-fields">
-                  <select
-                    class="sf2e-token-state-editor__status-operator-select"
-                    value={row.condition.operator}
-                    on:change={(e) => setConditionOperator(row, (e.currentTarget as HTMLSelectElement).value)}
-                  >
-                    <option value="any-of">Any Of</option>
-                    <option value="all-of">All Of</option>
-                  </select>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Status Slugs</label>
-                <div class="form-fields">
-                  <div class="sf2e-token-state-editor__multiselect" on:pointerdown|stopPropagation>
-                    <button
-                      type="button"
-                      class="sf2e-token-state-editor__multiselect-trigger"
-                      on:pointerdown|stopPropagation|preventDefault={() =>
-                        toggleConditionPicker("tokenStates", index)}
-                      title={row.condition.value.join(", ")}
-                    >
-                      <span class="sf2e-token-state-editor__multiselect-trigger-text">
-                        {conditionDisplayText(row.condition.value)}
-                      </span>
-                    </button>
-                    {#if openConditionPickerKey === `tokenStates:${index}`}
-                      <div class="sf2e-token-state-editor__multiselect-popover">
-                        {#each conditionOptions as option}
-                          <label class="sf2e-token-state-editor__multiselect-option">
-                            <input
-                              type="checkbox"
-                              checked={row.condition.value.includes(option.slug)}
-                              on:change={() => toggleStatusCondition(row, option.slug)}
-                            />
-                            <span>{option.name}</span>
-                          </label>
-                        {/each}
-                      </div>
-                    {/if}
-                  </div>
-                </div>
-              </div>
-            {/if}
+          <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--condition">
+            <label>Conditions</label>
+            <div class="form-fields">
+              <input type="text" value={tokenStateConditionsSummary(row.conditions)} readonly />
+              <button
+                type="button"
+                class="sf2e-token-state-editor__icon-button"
+                on:click={() => openTokenStateConditionsConfig(index)}
+                title="Configure conditions"
+              >
+                <i class="fa-solid fa-gear"></i>
+              </button>
+            </div>
           </div>
 
           <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--asset">
@@ -537,7 +556,7 @@
                   <select
                     class="sf2e-token-state-editor__status-operator-select"
                     value={row.condition.operator}
-                    on:change={(e) => setConditionOperator(row, (e.currentTarget as HTMLSelectElement).value)}
+                    on:change={(e) => setUiConditionOperator(row.condition, (e.currentTarget as HTMLSelectElement).value)}
                   >
                     {#each numericOperatorOptions as option}
                       <option value={option.value}>{option.label}</option>
@@ -548,14 +567,14 @@
               <div class="form-group">
                 <label>Value</label>
                 <div class="form-fields">
-                  <input type="number" min={row.condition.type === "hp-percent" ? 0 : undefined} max={row.condition.type === "hp-percent" ? 1 : undefined} step={row.condition.type === "hp-percent" ? 0.01 : 1} bind:value={row.condition.value} on:input={(e) => setConditionNumericValue(row, Number((e.currentTarget as HTMLInputElement).value))} />
+                  <input type="number" min={row.condition.type === "hp-percent" ? 0 : undefined} max={row.condition.type === "hp-percent" ? 1 : undefined} step={row.condition.type === "hp-percent" ? 0.01 : 1} bind:value={row.condition.value} on:input={(e) => setUiConditionNumericValue(row.condition, Number((e.currentTarget as HTMLInputElement).value))} />
                 </div>
               </div>
             {:else if row.condition.type === "in-combat"}
               <div class="form-group">
                 <label>In Combat</label>
                 <div class="form-fields">
-                  <select value={String(row.condition.value)} on:change={(e) => setConditionCombatValue(row, (e.currentTarget as HTMLSelectElement).value)}>
+                  <select value={String(row.condition.value)} on:change={(e) => setUiConditionCombatValue(row.condition, (e.currentTarget as HTMLSelectElement).value)}>
                     <option value="true">Yes</option>
                     <option value="false">No</option>
                   </select>
@@ -565,7 +584,7 @@
               <div class="form-group">
                 <label>Operator</label>
                 <div class="form-fields">
-                  <select value={row.condition.operator} on:change={(e) => setConditionOperator(row, (e.currentTarget as HTMLSelectElement).value)}>
+                  <select value={row.condition.operator} on:change={(e) => setUiConditionOperator(row.condition, (e.currentTarget as HTMLSelectElement).value)}>
                     <option value="any-of">Any Of</option>
                     <option value="all-of">All Of</option>
                   </select>
@@ -593,7 +612,10 @@
                             <input
                               type="checkbox"
                               checked={row.condition.value.includes(option.slug)}
-                              on:change={() => toggleStatusCondition(row, option.slug)}
+                              on:change={() => {
+                                toggleStatusConditionValue(row.condition, option.slug);
+                                updateConfig();
+                              }}
                             />
                             <span>{option.name}</span>
                           </label>
@@ -690,6 +712,197 @@
           <footer class="sf2e-token-state-editor__modal-footer">
             <button type="button" on:click={saveImageConfigModal}>Save Configuration</button>
             <button type="button" on:click={closeImageConfigModal}>Cancel</button>
+          </footer>
+        </div>
+      </section>
+    </div>
+  {/if}
+
+  {#if tokenStateConditionsConfigModal}
+    <div class="sf2e-token-state-editor__modal-backdrop" on:pointerdown={closeTokenStateConditionsConfigModal}>
+      <section
+        class="sf2e-token-state-editor__modal sf2e-token-state-editor__modal--wide"
+        on:pointerdown|stopPropagation
+      >
+        <header class="sf2e-token-state-editor__modal-header">
+          <h1>Configure Conditions</h1>
+        </header>
+
+        <div class="sf2e-token-state-editor__modal-content">
+          <div class="sf2e-token-state-editor__section-header">
+            <h3>Conditions</h3>
+            <button type="button" title="Add condition" on:click={addTokenStateConditionModalRow}>
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+
+          <div class="sf2e-token-state-editor__condition-modal-header">
+            <span>Type</span>
+            <span>Condition Config</span>
+            <span>Actions</span>
+          </div>
+
+          <div class="sf2e-token-state-editor__condition-modal-rows">
+            {#each tokenStateConditionsConfigModal.conditions as condition, conditionIndex}
+              <div class="sf2e-token-state-editor__condition-modal-row">
+                <div class="form-group">
+                  <label>Type</label>
+                  <div class="form-fields">
+                    <select
+                      value={condition.type}
+                      on:change={(e) => setTokenStateConditionModalType(conditionIndex, (e.currentTarget as HTMLSelectElement).value as ConditionType)}
+                    >
+                      {#each conditionTypeOptions as option}
+                        <option value={option.value}>{option.label}</option>
+                      {/each}
+                    </select>
+                  </div>
+                </div>
+
+                <div class="sf2e-token-state-editor__condition-modal-config">
+                  {#if condition.type === "hp-percent" || condition.type === "hp-value"}
+                    <div class="form-group">
+                      <label>Operator</label>
+                      <div class="form-fields">
+                        <select
+                          value={condition.operator}
+                          on:change={(e) =>
+                            updateTokenStateConditionModalCondition(conditionIndex, (c) => {
+                              if (!("operator" in c)) return;
+                              if (c.type === "status-effect") return;
+                              const value = (e.currentTarget as HTMLSelectElement).value;
+                              if (value === "<" || value === "<=" || value === ">" || value === ">=") c.operator = value;
+                            })}
+                        >
+                          {#each numericOperatorOptions as option}
+                            <option value={option.value}>{option.label}</option>
+                          {/each}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label>Value</label>
+                      <div class="form-fields">
+                        {#if condition.type === "hp-percent"}
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            bind:value={condition.value}
+                            on:input={(e) =>
+                              updateTokenStateConditionModalCondition(conditionIndex, (c) => {
+                                const value = Number((e.currentTarget as HTMLInputElement).value);
+                                if (c.type === "hp-percent") c.value = clamp(value, 0, 1);
+                              })}
+                          />
+                        {/if}
+                        <input
+                          type="number"
+                          min={condition.type === "hp-percent" ? 0 : undefined}
+                          max={condition.type === "hp-percent" ? 1 : undefined}
+                          step={condition.type === "hp-percent" ? 0.01 : 1}
+                          bind:value={condition.value}
+                          on:input={(e) =>
+                            updateTokenStateConditionModalCondition(conditionIndex, (c) => {
+                              const value = Number((e.currentTarget as HTMLInputElement).value);
+                              if (c.type === "hp-percent") c.value = clamp(value, 0, 1);
+                              if (c.type === "hp-value") c.value = Number.isFinite(value) ? value : 0;
+                            })}
+                        />
+                      </div>
+                    </div>
+                  {:else if condition.type === "in-combat"}
+                    <div class="form-group">
+                      <label>In Combat</label>
+                      <div class="form-fields">
+                        <select
+                          value={String(condition.value)}
+                          on:change={(e) =>
+                            updateTokenStateConditionModalCondition(conditionIndex, (c) => {
+                              if (c.type !== "in-combat") return;
+                              c.value = (e.currentTarget as HTMLSelectElement).value === "true";
+                            })}
+                        >
+                          <option value="true">Yes</option>
+                          <option value="false">No</option>
+                        </select>
+                      </div>
+                    </div>
+                  {:else if condition.type === "status-effect"}
+                    <div class="form-group">
+                      <label>Operator</label>
+                      <div class="form-fields">
+                        <select
+                          class="sf2e-token-state-editor__status-operator-select"
+                          value={condition.operator}
+                          on:change={(e) =>
+                            updateTokenStateConditionModalCondition(conditionIndex, (c) => {
+                              if (c.type !== "status-effect") return;
+                              c.operator = (e.currentTarget as HTMLSelectElement).value === "all-of" ? "all-of" : "any-of";
+                            })}
+                        >
+                          <option value="any-of">Any Of</option>
+                          <option value="all-of">All Of</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label>Status Slugs</label>
+                      <div class="form-fields">
+                        <div class="sf2e-token-state-editor__multiselect" on:pointerdown|stopPropagation>
+                          <button
+                            type="button"
+                            class="sf2e-token-state-editor__multiselect-trigger"
+                            on:pointerdown|stopPropagation|preventDefault={() => (openConditionPickerKey = openConditionPickerKey === `token-state-modal:${conditionIndex}` ? null : `token-state-modal:${conditionIndex}`)}
+                            title={condition.value.join(", ")}
+                          >
+                            <span class="sf2e-token-state-editor__multiselect-trigger-text">
+                              {conditionDisplayText(condition.value)}
+                            </span>
+                          </button>
+                          {#if openConditionPickerKey === `token-state-modal:${conditionIndex}`}
+                            <div class="sf2e-token-state-editor__multiselect-popover">
+                              {#each conditionOptions as option}
+                                <label class="sf2e-token-state-editor__multiselect-option">
+                                  <input
+                                    type="checkbox"
+                                    checked={condition.value.includes(option.slug)}
+                                    on:change={() =>
+                                      updateTokenStateConditionModalCondition(conditionIndex, (c) => {
+                                        if (c.type !== "status-effect") return;
+                                        toggleStatusConditionValue(c, option.slug);
+                                      })}
+                                  />
+                                  <span>{option.name}</span>
+                                </label>
+                              {/each}
+                            </div>
+                          {/if}
+                        </div>
+                      </div>
+                    </div>
+                  {/if}
+                </div>
+
+                <div class="sf2e-token-state-editor__condition-modal-row-actions">
+                  <button
+                    type="button"
+                    class="sf2e-token-state-editor__icon-button"
+                    title="Remove condition"
+                    on:click={() => removeTokenStateConditionModalRow(conditionIndex)}
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            {/each}
+          </div>
+
+          <footer class="sf2e-token-state-editor__modal-footer">
+            <button type="button" on:click={saveTokenStateConditionsConfigModal}>Save Configuration</button>
+            <button type="button" on:click={closeTokenStateConditionsConfigModal}>Cancel</button>
           </footer>
         </div>
       </section>
