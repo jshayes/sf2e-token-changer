@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ModalShell from "./ModalShell.svelte";
+
   type NumericOperator = "<" | "<=" | ">" | ">=";
   type StatusOperator = "any-of" | "all-of";
   type ConditionType = "hp-percent" | "hp-value" | "in-combat" | "status-effect";
@@ -697,16 +699,7 @@
   </footer>
 
   {#if imageConfigModal}
-    <div class="sf2e-token-state-editor__modal-backdrop" on:pointerdown={closeImageConfigModal}>
-      <section
-        class="sf2e-token-state-editor__modal"
-        on:pointerdown|stopPropagation
-      >
-        <header class="sf2e-token-state-editor__modal-header">
-          <h1>Configure Image</h1>
-        </header>
-
-        <div class="sf2e-token-state-editor__modal-content">
+    <ModalShell title="Configure Image" onClose={closeImageConfigModal}>
           <div class="form-group">
             <label>Image Path</label>
             <div class="form-fields">
@@ -741,22 +734,11 @@
             <button type="button" on:click={saveImageConfigModal}>Save Configuration</button>
             <button type="button" on:click={closeImageConfigModal}>Cancel</button>
           </footer>
-        </div>
-      </section>
-    </div>
+    </ModalShell>
   {/if}
 
   {#if tokenStateConditionsConfigModal}
-    <div class="sf2e-token-state-editor__modal-backdrop" on:pointerdown={closeTokenStateConditionsConfigModal}>
-      <section
-        class="sf2e-token-state-editor__modal sf2e-token-state-editor__modal--wide"
-        on:pointerdown|stopPropagation
-      >
-        <header class="sf2e-token-state-editor__modal-header">
-          <h1>Configure Conditions</h1>
-        </header>
-
-        <div class="sf2e-token-state-editor__modal-content">
+    <ModalShell title="Configure Conditions" wide={true} onClose={closeTokenStateConditionsConfigModal}>
           <div class="sf2e-token-state-editor__section-header">
             <h3>Conditions</h3>
             <button type="button" title="Add condition" on:click={addTokenStateConditionModalRow}>
@@ -938,22 +920,11 @@
             <button type="button" on:click={saveTokenStateConditionsConfigModal}>Save Configuration</button>
             <button type="button" on:click={closeTokenStateConditionsConfigModal}>Cancel</button>
           </footer>
-        </div>
-      </section>
-    </div>
+    </ModalShell>
   {/if}
 
   {#if soundConditionsConfigModal}
-    <div class="sf2e-token-state-editor__modal-backdrop" on:pointerdown={closeSoundConditionsConfigModal}>
-      <section
-        class="sf2e-token-state-editor__modal sf2e-token-state-editor__modal--wide"
-        on:pointerdown|stopPropagation
-      >
-        <header class="sf2e-token-state-editor__modal-header">
-          <h1>Configure Sound Trigger & Conditions</h1>
-        </header>
-
-        <div class="sf2e-token-state-editor__modal-content">
+    <ModalShell title="Configure Sound Trigger & Conditions" wide={true} onClose={closeSoundConditionsConfigModal}>
           <div class="sf2e-token-state-editor__section-header">
             <h3>Trigger</h3>
           </div>
@@ -1279,58 +1250,45 @@
             <button type="button" on:click={saveSoundConditionsConfigModal}>Save Configuration</button>
             <button type="button" on:click={closeSoundConditionsConfigModal}>Cancel</button>
           </footer>
-        </div>
-      </section>
-    </div>
+    </ModalShell>
   {/if}
 
   {#if soundConfigModal}
-    <div class="sf2e-token-state-editor__modal-backdrop" on:pointerdown={closeSoundConfigModal}>
-      <section
-        class="sf2e-token-state-editor__modal"
-        on:pointerdown|stopPropagation
-      >
-        <header class="sf2e-token-state-editor__modal-header">
-          <h1>Configure Sound</h1>
-        </header>
-
-        <div class="sf2e-token-state-editor__modal-content">
-          <div class="form-group">
-            <label>Sound Path</label>
-            <div class="form-fields">
-              <input type="text" bind:value={soundConfigModal.src} />
-              <button type="button" on:click={browseSoundConfigModal}>Browse</button>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Volume</label>
-            <div class="form-fields">
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                bind:value={soundConfigModal.volume}
-                on:input={(e) => (soundConfigModal = { ...soundConfigModal, volume: Number((e.currentTarget as HTMLInputElement).value) })}
-              />
-              <input
-                type="number"
-                min="0"
-                max="1"
-                step="0.05"
-                bind:value={soundConfigModal.volume}
-                on:input={(e) => (soundConfigModal = { ...soundConfigModal, volume: Number((e.currentTarget as HTMLInputElement).value) })}
-              />
-            </div>
-          </div>
-
-          <footer class="sf2e-token-state-editor__modal-footer">
-            <button type="button" on:click={saveSoundConfigModal}>Save Configuration</button>
-            <button type="button" on:click={closeSoundConfigModal}>Cancel</button>
-          </footer>
+    <ModalShell title="Configure Sound" onClose={closeSoundConfigModal}>
+      <div class="form-group">
+        <label>Sound Path</label>
+        <div class="form-fields">
+          <input type="text" bind:value={soundConfigModal.src} />
+          <button type="button" on:click={browseSoundConfigModal}>Browse</button>
         </div>
-      </section>
-    </div>
+      </div>
+
+      <div class="form-group">
+        <label>Volume</label>
+        <div class="form-fields">
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            bind:value={soundConfigModal.volume}
+            on:input={(e) => (soundConfigModal = { ...soundConfigModal, volume: Number((e.currentTarget as HTMLInputElement).value) })}
+          />
+          <input
+            type="number"
+            min="0"
+            max="1"
+            step="0.05"
+            bind:value={soundConfigModal.volume}
+            on:input={(e) => (soundConfigModal = { ...soundConfigModal, volume: Number((e.currentTarget as HTMLInputElement).value) })}
+          />
+        </div>
+      </div>
+
+      <footer class="sf2e-token-state-editor__modal-footer">
+        <button type="button" on:click={saveSoundConfigModal}>Save Configuration</button>
+        <button type="button" on:click={closeSoundConfigModal}>Cancel</button>
+      </footer>
+    </ModalShell>
   {/if}
 </section>
