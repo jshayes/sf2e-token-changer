@@ -3,6 +3,7 @@
     clamp,
     conditionDisplayText as conditionDisplayTextHelper,
     conditionTypeOptions,
+    defaultCondition,
     numericOperatorOptions,
   } from "./helpers/conditions";
   import type { ConditionOption, ConditionType, UiCondition } from "./helpers/conditions";
@@ -43,7 +44,7 @@
   let tokenStateConditionsConfigModal: TokenStateConditionsConfigModalState | null = null;
   let soundConditionsConfigModal: SoundConditionsConfigModalState | null = null;
 
-  $: jsonPreview = JSON.stringify(config, null, 2);
+  $: jsonPreview = JSON.stringify(toSerializableConfig(config), null, 2);
 
   function deepClone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value)) as T;
@@ -55,17 +56,16 @@
     return Math.random().toString(36).slice(2, 10);
   }
 
-  function defaultCondition(type: ConditionType = "hp-percent"): UiCondition {
-    switch (type) {
-      case "hp-percent":
-        return { type, operator: "<=", value: 0.5 };
-      case "hp-value":
-        return { type, operator: "<=", value: 10 };
-      case "in-combat":
-        return { type, value: true };
-      case "status-effect":
-        return { type, operator: "any-of", value: [] };
-    }
+  function toSerializableConfig(value: TokenStateUiConfig): Omit<TokenStateUiConfig, "tokenStates" | "sounds"> & {
+    tokenStates: Array<Omit<TokenStateImageRuleConfig, "id">>;
+    sounds: Array<Omit<SoundTriggerRuleConfig, "id">>;
+  } {
+    return {
+      version: value.version,
+      default: deepClone(value.default),
+      tokenStates: value.tokenStates.map(({ id: _id, ...row }) => deepClone(row)),
+      sounds: value.sounds.map(({ id: _id, ...row }) => deepClone(row)),
+    };
   }
 
   function addTokenState(): void {
@@ -519,7 +519,7 @@
   </section>
 
   <footer class="sf2e-token-state-editor__footer">
-    <button type="button" on:click={() => onApply(config)}>Apply To Token Config</button>
+    <button type="button" on:click={() => onApply(toSerializableConfig(config) as unknown as TokenStateUiConfig)}>Apply To Token Config</button>
     <button type="button" on:click={onClose}>Close</button>
   </footer>
 

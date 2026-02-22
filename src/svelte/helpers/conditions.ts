@@ -29,6 +29,19 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+export function defaultCondition(type: ConditionType = "hp-percent"): UiCondition {
+  switch (type) {
+    case "hp-percent":
+      return { type, operator: "<=", value: 0.5 };
+    case "hp-value":
+      return { type, operator: "<=", value: 10 };
+    case "in-combat":
+      return { type, value: true };
+    case "status-effect":
+      return { type, operator: "any-of", value: [] };
+  }
+}
+
 export function conditionDisplayText(values: string[], conditionOptions: ConditionOption[]): string {
   if (values.length === 0) return "Select conditions";
   const names = values.map((slug) => conditionOptions.find((option) => option.slug === slug)?.name ?? slug);
