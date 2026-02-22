@@ -1,6 +1,7 @@
 <script lang="ts">
-  import ModalShell from "./ModalShell.svelte";
-  import TokenStateRow from "./TokenStateRow.svelte";
+  import ModalShell from "./components/ModalShell.svelte";
+  import SoundRow from "./components/SoundRow.svelte";
+  import TokenStateRow from "./components/TokenStateRow.svelte";
 
   type NumericOperator = "<" | "<=" | ">" | ">=";
   type StatusOperator = "any-of" | "all-of";
@@ -591,59 +592,18 @@
     </div>
     <div class="sf2e-token-state-editor__rows" data-list="sounds">
       {#each config.sounds as row, index (row.id)}
-        <article class="sf2e-token-state-editor__row" data-list="sounds" data-index={index} on:dragover={dragOver} on:drop={(e) => dropOn(e, "sounds", index)}>
-          <div class="sf2e-token-state-editor__row-toolbar">
-            <button type="button" draggable="true" title="Drag priority" on:dragstart={(e) => startDrag(e, "sounds", index)}>☰</button>
-          </div>
-
-          <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--type">
-            <label>Name</label>
-            <div class="form-fields">
-              <input type="text" bind:value={row.name} placeholder="e.g. Condition Applied In Combat" on:input={updateConfig} />
-            </div>
-          </div>
-
-          <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--condition">
-            <label>Conditions</label>
-            <div class="form-fields">
-              <input type="text" value={soundConditionSummary(row.trigger, row.conditions)} readonly />
-              <button
-                type="button"
-                class="sf2e-token-state-editor__icon-button"
-                on:click={() => openSoundConditionsConfig(index)}
-                title="Configure trigger and conditions"
-              >
-                <i class="fa-solid fa-gear"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--asset">
-            <label>Sound</label>
-            <div class="form-fields">
-              <input type="text" value={row.src} readonly />
-              <button
-                type="button"
-                class="sf2e-token-state-editor__icon-button"
-                on:click={() => openSoundConfig(index)}
-                title="Configure sound"
-              >
-                <i class="fa-solid fa-gear"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="sf2e-token-state-editor__cell sf2e-token-state-editor__cell--actions">
-            <button
-              type="button"
-              class="sf2e-token-state-editor__icon-button"
-              title="Remove row"
-              on:click={() => removeRow("sounds", index)}
-            >
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-        </article>
+        <SoundRow
+          {row}
+          {index}
+          conditionSummary={soundConditionSummary(row.trigger, row.conditions)}
+          onNameInput={updateConfig}
+          onOpenConditions={openSoundConditionsConfig}
+          onOpenSound={openSoundConfig}
+          onRemove={(rowIndex) => removeRow("sounds", rowIndex)}
+          onDragStart={(event, rowIndex) => startDrag(event, "sounds", rowIndex)}
+          onDragOver={dragOver}
+          onDrop={(event, rowIndex) => dropOn(event, "sounds", rowIndex)}
+        />
       {/each}
     </div>
   </section>
