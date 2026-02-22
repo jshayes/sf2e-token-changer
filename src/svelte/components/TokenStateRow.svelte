@@ -1,14 +1,7 @@
 <script lang="ts">
+  import type { TokenStateImageRuleConfig } from "../helpers/editor-types";
   import type { UiCondition } from "../helpers/conditions";
   import { tokenStateConditionsSummary } from "../helpers/conditions";
-
-  type TokenStateImageRuleConfig = {
-    id: string;
-    name: string;
-    conditions: UiCondition[];
-    image: string;
-    scale: number;
-  };
 
   export let row: TokenStateImageRuleConfig;
   export let index: number;

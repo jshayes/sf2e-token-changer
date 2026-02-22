@@ -1,15 +1,7 @@
 <script lang="ts">
+  import type { SoundTriggerRuleConfig } from "../helpers/editor-types";
   import type { UiCondition } from "../helpers/conditions";
   import { soundConditionSummary } from "../helpers/conditions";
-
-  type SoundTriggerRuleConfig = {
-    id: string;
-    name: string;
-    trigger: UiCondition;
-    conditions: UiCondition[];
-    src: string;
-    volume: number;
-  };
 
   export let row: SoundTriggerRuleConfig;
   export let index: number;

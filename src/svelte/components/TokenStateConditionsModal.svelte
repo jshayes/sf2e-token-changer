@@ -1,12 +1,8 @@
 <script lang="ts">
   import ConditionConfigFields from "./ConditionConfigFields.svelte";
   import ModalShell from "./ModalShell.svelte";
+  import type { TokenStateConditionsModalState } from "../helpers/editor-types";
   import type { ConditionOption, ConditionType, NumericOperator, UiCondition } from "../helpers/conditions";
-
-  type TokenStateConditionsModalState = {
-    target: { index: number };
-    conditions: UiCondition[];
-  };
 
   export let modal: TokenStateConditionsModalState;
   export let conditionTypeOptions: Array<{ value: ConditionType; label: string }>;

@@ -1,10 +1,6 @@
 <script lang="ts">
   import ModalShell from "./ModalShell.svelte";
-
-  export type SoundConfigModalState = {
-    src: string;
-    volume: number;
-  };
+  import type { SoundConfigModalState } from "../helpers/editor-types";
 
   export let modal: SoundConfigModalState;
   export let onClose: () => void;

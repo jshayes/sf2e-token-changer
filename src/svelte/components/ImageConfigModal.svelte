@@ -1,10 +1,6 @@
 <script lang="ts">
   import ModalShell from "./ModalShell.svelte";
-
-  export type ImageConfigModalState = {
-    image: string;
-    scale: number;
-  };
+  import type { ImageConfigModalState } from "../helpers/editor-types";
 
   export let modal: ImageConfigModalState;
   export let onClose: () => void;

@@ -6,6 +6,19 @@
     numericOperatorOptions,
   } from "./helpers/conditions";
   import type { ConditionOption, ConditionType, UiCondition } from "./helpers/conditions";
+  import type {
+    ImageConfigModalState,
+    ImageConfigTarget,
+    SoundConditionsConfigModalState,
+    SoundConditionsConfigTarget,
+    SoundConfigModalState,
+    SoundConfigTarget,
+    SoundTriggerRuleConfig,
+    TokenStateConditionsConfigModalState,
+    TokenStateConditionsConfigTarget,
+    TokenStateImageRuleConfig,
+    TokenStateUiConfig,
+  } from "./helpers/editor-types";
   import ImageConfigModal from "./components/ImageConfigModal.svelte";
   import SoundConditionsConfigModal from "./components/SoundConditionsConfigModal.svelte";
   import SoundConfigModal from "./components/SoundConfigModal.svelte";
@@ -13,42 +26,8 @@
   import TokenStateConditionsModal from "./components/TokenStateConditionsModal.svelte";
   import TokenStateRow from "./components/TokenStateRow.svelte";
 
-  type TokenStateImageRuleConfig = {
-    id: string;
-    name: string;
-    conditions: UiCondition[];
-    image: string;
-    scale: number;
-  };
-
-  type SoundTriggerRuleConfig = {
-    id: string;
-    name: string;
-    trigger: UiCondition;
-    conditions: UiCondition[];
-    src: string;
-    volume: number;
-  };
-
-  type TokenStateUiConfig = {
-    version: 1;
-    default: {
-      image: string;
-      scale: number;
-    };
-    tokenStates: TokenStateImageRuleConfig[];
-    sounds: SoundTriggerRuleConfig[];
-  };
-
   type EditorRowList = "tokenStates" | "sounds";
   type Row = TokenStateImageRuleConfig | SoundTriggerRuleConfig;
-  type ImageConfigTarget =
-    | { kind: "default" }
-    | { kind: "tokenState"; index: number };
-  type SoundConfigTarget = { index: number };
-  type TokenStateConditionsConfigTarget = { index: number };
-  type SoundConditionsConfigTarget = { index: number };
-
 
   export let initialConfig: TokenStateUiConfig;
   export let onApply: (config: TokenStateUiConfig) => void;
@@ -59,33 +38,10 @@
   let dragState: { list: EditorRowList; index: number } | null = null;
   let conditionOptions: ConditionOption[] = getConditionOptions();
   let openConditionPickerKey: string | null = null;
-  let imageConfigModal:
-    | {
-        target: ImageConfigTarget;
-        image: string;
-        scale: number;
-      }
-    | null = null;
-  let soundConfigModal:
-    | {
-        target: SoundConfigTarget;
-        src: string;
-        volume: number;
-      }
-    | null = null;
-  let tokenStateConditionsConfigModal:
-    | {
-        target: TokenStateConditionsConfigTarget;
-        conditions: UiCondition[];
-      }
-    | null = null;
-  let soundConditionsConfigModal:
-    | {
-        target: SoundConditionsConfigTarget;
-        trigger: UiCondition;
-        conditions: UiCondition[];
-      }
-    | null = null;
+  let imageConfigModal: ImageConfigModalState | null = null;
+  let soundConfigModal: SoundConfigModalState | null = null;
+  let tokenStateConditionsConfigModal: TokenStateConditionsConfigModalState | null = null;
+  let soundConditionsConfigModal: SoundConditionsConfigModalState | null = null;
 
   $: jsonPreview = JSON.stringify(config, null, 2);
 

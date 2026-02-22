@@ -1,13 +1,8 @@
 <script lang="ts">
   import ConditionConfigFields from "./ConditionConfigFields.svelte";
   import ModalShell from "./ModalShell.svelte";
+  import type { SoundConditionsModalState } from "../helpers/editor-types";
   import type { ConditionOption, ConditionType, NumericOperator, UiCondition } from "../helpers/conditions";
-
-  type SoundConditionsModalState = {
-    target: { index: number };
-    trigger: UiCondition;
-    conditions: UiCondition[];
-  };
 
   export let modal: SoundConditionsModalState;
   export let conditionTypeOptions: Array<{ value: ConditionType; label: string }>;
