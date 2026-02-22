@@ -15,6 +15,7 @@
   export let onSave: () => void;
 
   let openConditionPickerKey: string | null = null;
+  let hasAttemptedSave = false;
 
   function updateTrigger(updater: (condition: UiCondition) => void): void {
     updater(modal.trigger);
@@ -56,6 +57,22 @@
   function setOpenPickerKey(key: string | null): void {
     openConditionPickerKey = key;
   }
+
+  function hasValidationErrors(): boolean {
+    if (modal.trigger.type === "status-effect" && modal.trigger.value.length === 0) {
+      return true;
+    }
+    return modal.conditions.some(
+      (condition) =>
+        condition.type === "status-effect" && condition.value.length === 0,
+    );
+  }
+
+  function saveModal(): void {
+    hasAttemptedSave = true;
+    if (hasValidationErrors()) return;
+    onSave();
+  }
 </script>
 
 <svelte:window on:pointerdown={() => (openConditionPickerKey = null)} />
@@ -92,6 +109,7 @@
           {conditionOptions}
           {conditionDisplayText}
           {openConditionPickerKey}
+          showValidation={hasAttemptedSave}
           setOpenConditionPickerKey={setOpenPickerKey}
           pickerKey="sound-modal:trigger"
           onUpdate={updateTrigger}
@@ -137,6 +155,7 @@
             {conditionOptions}
             {conditionDisplayText}
             {openConditionPickerKey}
+            showValidation={hasAttemptedSave}
             setOpenConditionPickerKey={setOpenPickerKey}
             pickerKey={`sound-modal:condition:${conditionIndex}`}
             onUpdate={(updater) => updateCondition(conditionIndex, updater)}
@@ -157,7 +176,7 @@
   {/if}
 
   <footer class="sf2e-token-state-editor__modal-footer">
-    <button type="button" on:click={onSave}>Save Configuration</button>
+    <button type="button" on:click={saveModal}>Save Configuration</button>
     <button type="button" on:click={onClose}>Cancel</button>
   </footer>
 </ModalShell>

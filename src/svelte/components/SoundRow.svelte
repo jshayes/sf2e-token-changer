@@ -5,6 +5,7 @@
 
   export let row: SoundTriggerRuleConfig;
   export let index: number;
+  export let showValidation = false;
   export let onNameInput: () => void;
   export let onOpenConditions: (index: number) => void;
   export let onOpenSound: (index: number) => void;
@@ -12,6 +13,20 @@
   export let onDragStart: (event: DragEvent, index: number) => void;
   export let onDragOver: (event: DragEvent) => void;
   export let onDrop: (event: DragEvent, index: number) => void;
+
+  function hasEmptyStatusEffectCondition(conditions: UiCondition[]): boolean {
+    return conditions.some(
+      (condition) =>
+        condition.type === "status-effect" && condition.value.length === 0,
+    );
+  }
+
+  function hasStatusErrors(row: SoundTriggerRuleConfig): boolean {
+    return (
+      (row.trigger.type === "status-effect" && row.trigger.value.length === 0) ||
+      hasEmptyStatusEffectCondition(row.conditions)
+    );
+  }
 </script>
 
 <article
@@ -77,4 +92,15 @@
       <i class="fa-solid fa-trash"></i>
     </button>
   </div>
+
+  {#if showValidation && (!row.src.trim() || hasStatusErrors(row))}
+    <div class="sf2e-token-state-editor__row-error">
+      {#if !row.src.trim()}
+        <span class="sf2e-token-state-editor__field-error">Sound is required.</span>
+      {/if}
+      {#if hasStatusErrors(row)}
+        <span class="sf2e-token-state-editor__field-error">Status-effect trigger/conditions must select at least one status.</span>
+      {/if}
+    </div>
+  {/if}
 </article>

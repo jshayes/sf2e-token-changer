@@ -42,11 +42,17 @@
   let soundConfigModal: SoundConfigModalState | null = null;
   let tokenStateConditionsConfigModal: TokenStateConditionsConfigModalState | null = null;
   let soundConditionsConfigModal: SoundConditionsConfigModalState | null = null;
+  let hasAttemptedSave = false;
 
   $: jsonPreview = JSON.stringify(toSerializableConfig(config), null, 2);
 
   function deepClone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value)) as T;
+  }
+
+  function notifyWarn(message: string): void {
+    const notifications = (globalThis as { ui?: { notifications?: { warn?: (msg: string) => void } } }).ui?.notifications;
+    notifications?.warn?.(message);
   }
 
   function randomId(): string {
@@ -235,6 +241,10 @@
 
   function saveImageConfigModal(): void {
     if (!imageConfigModal) return;
+    if (!imageConfigModal.image.trim()) {
+      notifyWarn("Image cannot be empty.");
+      return;
+    }
     if (imageConfigModal.target.kind === "default") {
       config.default.image = imageConfigModal.image;
       config.default.scale = clamp(imageConfigModal.scale, 0.1, 3);
@@ -260,6 +270,10 @@
 
   function saveSoundConfigModal(): void {
     if (!soundConfigModal) return;
+    if (!soundConfigModal.src.trim()) {
+      notifyWarn("Sound cannot be empty.");
+      return;
+    }
     const row = config.sounds[soundConfigModal.target.index];
     if (!row) return;
     row.src = soundConfigModal.src;
@@ -278,6 +292,61 @@
 
   function conditionDisplayText(values: string[]): string {
     return conditionDisplayTextHelper(values, conditionOptions);
+  }
+
+  function validateCondition(condition: UiCondition, path: string): string | null {
+    if (condition.type !== "status-effect") return null;
+    if (condition.value.length > 0) return null;
+    return `${path}: status conditions cannot be empty.`;
+  }
+
+  function validateConfigBeforeSave(): string | null {
+    if (!config.default.image.trim()) {
+      return "Default image cannot be empty.";
+    }
+
+    for (const [index, row] of config.tokenStates.entries()) {
+      if (!row.image.trim()) {
+        return `Token state row ${index + 1}: image cannot be empty.`;
+      }
+      for (const [conditionIndex, condition] of row.conditions.entries()) {
+        const error = validateCondition(
+          condition,
+          `Token state row ${index + 1}, condition ${conditionIndex + 1}`,
+        );
+        if (error) return error;
+      }
+    }
+
+    for (const [index, row] of config.sounds.entries()) {
+      if (!row.src.trim()) {
+        return `Sound row ${index + 1}: sound cannot be empty.`;
+      }
+      const triggerError = validateCondition(
+        row.trigger,
+        `Sound row ${index + 1}, trigger`,
+      );
+      if (triggerError) return triggerError;
+      for (const [conditionIndex, condition] of row.conditions.entries()) {
+        const error = validateCondition(
+          condition,
+          `Sound row ${index + 1}, condition ${conditionIndex + 1}`,
+        );
+        if (error) return error;
+      }
+    }
+
+    return null;
+  }
+
+  function saveConfig(): void {
+    hasAttemptedSave = true;
+    const error = validateConfigBeforeSave();
+    if (error) {
+      notifyWarn(error);
+      return;
+    }
+    onApply(toSerializableConfig(config) as unknown as TokenStateUiConfig);
   }
 
   function startDrag(event: DragEvent, list: EditorRowList, index: number): void {
@@ -325,6 +394,9 @@
         </div>
       </div>
     </article>
+    {#if hasAttemptedSave && !config.default.image.trim()}
+      <p class="sf2e-token-state-editor__field-error">Default image is required.</p>
+    {/if}
   </section>
 
   <section class="sf2e-token-state-editor__section">
@@ -343,6 +415,7 @@
           <TokenStateRow
             {row}
             {index}
+            showValidation={hasAttemptedSave}
             onNameInput={updateConfig}
             onOpenConditions={openTokenStateConditionsConfig}
             onOpenImage={openTokenStateImageConfig}
@@ -372,6 +445,7 @@
           <SoundRow
             {row}
             {index}
+            showValidation={hasAttemptedSave}
             onNameInput={updateConfig}
             onOpenConditions={openSoundConditionsConfig}
             onOpenSound={openSoundConfig}
@@ -386,7 +460,7 @@
   </section>
 
   <footer class="sf2e-token-state-editor__footer">
-    <button type="button" on:click={() => onApply(toSerializableConfig(config) as unknown as TokenStateUiConfig)}>Save</button>
+    <button type="button" on:click={saveConfig}>Save</button>
     <button type="button" on:click={onClose}>Close</button>
   </footer>
 

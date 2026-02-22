@@ -16,6 +16,12 @@
   height: 300px;
 }
 
+.sf2e-token-state-editor__field-error {
+  color: var(--color-level-error, #b71c1c);
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
 .sf2e-token-state-editor__empty-state {
   display: flex;
   align-items: center;
@@ -68,6 +74,14 @@
   padding-right: 0.75rem;
   margin-bottom: 0.75rem;
   overflow: visible;
+}
+
+.sf2e-token-state-editor__row-error {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  padding: 0 0 0.4rem;
 }
 
 .sf2e-token-state-editor__row--default {
@@ -430,6 +444,11 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   min-width: 0;
+}
+
+.sf2e-token-state-editor__condition-inline-error {
+  flex: 1 1 100%;
+  margin-top: -0.15rem;
 }
 
 .sf2e-token-state-editor__condition-modal-config .form-group {

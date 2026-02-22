@@ -11,6 +11,7 @@
   export let setOpenConditionPickerKey: (key: string | null) => void;
   export let pickerKey: string;
   export let onUpdate: (updater: (condition: UiCondition) => void) => void;
+  export let showValidation = false;
 
   let multiselectRoot: HTMLDivElement | null = null;
   let pickerButton: HTMLButtonElement | null = null;
@@ -264,5 +265,10 @@
         </div>
       </div>
     </div>
+    {#if showValidation && condition.value.length === 0}
+      <div class="sf2e-token-state-editor__condition-inline-error">
+        <span class="sf2e-token-state-editor__field-error">Select at least one status condition.</span>
+      </div>
+    {/if}
   {/if}
 </div>

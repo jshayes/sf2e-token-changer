@@ -14,6 +14,7 @@
   export let onClose: () => void;
   export let onSave: () => void;
   let openConditionPickerKey: string | null = null;
+  let hasAttemptedSave = false;
 
   function addCondition(): void {
     modal = { ...modal, conditions: [...modal.conditions, defaultCondition("hp-percent")] };
@@ -47,6 +48,19 @@
 
   function setOpenPickerKey(key: string | null): void {
     openConditionPickerKey = key;
+  }
+
+  function hasValidationErrors(): boolean {
+    return modal.conditions.some(
+      (condition) =>
+        condition.type === "status-effect" && condition.value.length === 0,
+    );
+  }
+
+  function saveModal(): void {
+    hasAttemptedSave = true;
+    if (hasValidationErrors()) return;
+    onSave();
   }
 </script>
 
@@ -89,6 +103,7 @@
           {conditionOptions}
           {conditionDisplayText}
           {openConditionPickerKey}
+          showValidation={hasAttemptedSave}
           setOpenConditionPickerKey={setOpenPickerKey}
           pickerKey={`token-state-modal:${conditionIndex}`}
           onUpdate={(updater) => updateCondition(conditionIndex, updater)}
@@ -109,7 +124,7 @@
   </div>
 
   <footer class="sf2e-token-state-editor__modal-footer">
-    <button type="button" on:click={onSave}>Save Configuration</button>
+    <button type="button" on:click={saveModal}>Save Configuration</button>
     <button type="button" on:click={onClose}>Cancel</button>
   </footer>
 </ModalShell>

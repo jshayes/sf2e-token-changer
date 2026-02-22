@@ -5,6 +5,7 @@
 
   export let row: TokenStateImageRuleConfig;
   export let index: number;
+  export let showValidation = false;
   export let onNameInput: () => void;
   export let onOpenConditions: (index: number) => void;
   export let onOpenImage: (index: number) => void;
@@ -12,6 +13,13 @@
   export let onDragStart: (event: DragEvent, index: number) => void;
   export let onDragOver: (event: DragEvent) => void;
   export let onDrop: (event: DragEvent, index: number) => void;
+
+  function hasEmptyStatusEffectCondition(conditions: UiCondition[]): boolean {
+    return conditions.some(
+      (condition) =>
+        condition.type === "status-effect" && condition.value.length === 0,
+    );
+  }
 </script>
 
 <article
@@ -78,4 +86,15 @@
       <i class="fa-solid fa-trash"></i>
     </button>
   </div>
+
+  {#if showValidation && (!row.image.trim() || hasEmptyStatusEffectCondition(row.conditions))}
+    <div class="sf2e-token-state-editor__row-error">
+      {#if !row.image.trim()}
+        <span class="sf2e-token-state-editor__field-error">Image is required.</span>
+      {/if}
+      {#if hasEmptyStatusEffectCondition(row.conditions)}
+        <span class="sf2e-token-state-editor__field-error">Status-effect conditions must select at least one status.</span>
+      {/if}
+    </div>
+  {/if}
 </article>
