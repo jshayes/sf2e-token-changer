@@ -208,8 +208,9 @@
             <input
               type="text"
               readonly
-              value={conditionDisplayText(condition.value)}
+              value={showValidation && condition.value.length === 0 ? "Select at least one status condition." : conditionDisplayText(condition.value)}
               title={condition.value.join(", ")}
+              class:sf2e-token-state-editor__input-error={showValidation && condition.value.length === 0}
             />
             <button
               type="button"
@@ -265,10 +266,5 @@
         </div>
       </div>
     </div>
-    {#if showValidation && condition.value.length === 0}
-      <div class="sf2e-token-state-editor__condition-inline-error">
-        <span class="sf2e-token-state-editor__field-error">Select at least one status condition.</span>
-      </div>
-    {/if}
   {/if}
 </div>

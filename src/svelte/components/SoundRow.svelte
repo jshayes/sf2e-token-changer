@@ -27,6 +27,9 @@
       hasEmptyStatusEffectCondition(row.conditions)
     );
   }
+
+  $: hasConditionError = showValidation && hasStatusErrors(row);
+  $: hasSoundError = showValidation && !row.src.trim();
 </script>
 
 <article
@@ -55,7 +58,12 @@
   <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--condition">
     <label>Conditions</label>
     <div class="form-fields">
-      <input type="text" value={soundConditionSummary(row.trigger, row.conditions)} readonly />
+      <input
+        type="text"
+        readonly
+        value={hasConditionError ? "Status-effect trigger/conditions must select at least one status." : soundConditionSummary(row.trigger, row.conditions)}
+        class:sf2e-token-state-editor__input-error={hasConditionError}
+      />
       <button
         type="button"
         class="sf2e-token-state-editor__icon-button"
@@ -70,7 +78,12 @@
   <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--asset">
     <label>Sound</label>
     <div class="form-fields">
-      <input type="text" value={row.src} readonly />
+      <input
+        type="text"
+        readonly
+        value={hasSoundError ? "Sound is required." : row.src}
+        class:sf2e-token-state-editor__input-error={hasSoundError}
+      />
       <button
         type="button"
         class="sf2e-token-state-editor__icon-button"
@@ -93,14 +106,4 @@
     </button>
   </div>
 
-  {#if showValidation && (!row.src.trim() || hasStatusErrors(row))}
-    <div class="sf2e-token-state-editor__row-error">
-      {#if !row.src.trim()}
-        <span class="sf2e-token-state-editor__field-error">Sound is required.</span>
-      {/if}
-      {#if hasStatusErrors(row)}
-        <span class="sf2e-token-state-editor__field-error">Status-effect trigger/conditions must select at least one status.</span>
-      {/if}
-    </div>
-  {/if}
 </article>

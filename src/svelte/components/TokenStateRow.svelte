@@ -20,6 +20,9 @@
         condition.type === "status-effect" && condition.value.length === 0,
     );
   }
+
+  $: hasConditionError = showValidation && hasEmptyStatusEffectCondition(row.conditions);
+  $: hasImageError = showValidation && !row.image.trim();
 </script>
 
 <article
@@ -49,7 +52,12 @@
   <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--condition">
     <label>Conditions</label>
     <div class="form-fields">
-      <input type="text" value={tokenStateConditionsSummary(row.conditions)} readonly />
+      <input
+        type="text"
+        readonly
+        value={hasConditionError ? "Status-effect conditions must select at least one status." : tokenStateConditionsSummary(row.conditions)}
+        class:sf2e-token-state-editor__input-error={hasConditionError}
+      />
       <button
         type="button"
         class="sf2e-token-state-editor__icon-button"
@@ -64,7 +72,12 @@
   <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--asset">
     <label>Image</label>
     <div class="form-fields">
-      <input type="text" value={row.image} readonly />
+      <input
+        type="text"
+        readonly
+        value={hasImageError ? "Image is required." : row.image}
+        class:sf2e-token-state-editor__input-error={hasImageError}
+      />
       <button
         type="button"
         class="sf2e-token-state-editor__icon-button"
@@ -87,14 +100,4 @@
     </button>
   </div>
 
-  {#if showValidation && (!row.image.trim() || hasEmptyStatusEffectCondition(row.conditions))}
-    <div class="sf2e-token-state-editor__row-error">
-      {#if !row.image.trim()}
-        <span class="sf2e-token-state-editor__field-error">Image is required.</span>
-      {/if}
-      {#if hasEmptyStatusEffectCondition(row.conditions)}
-        <span class="sf2e-token-state-editor__field-error">Status-effect conditions must select at least one status.</span>
-      {/if}
-    </div>
-  {/if}
 </article>

@@ -387,16 +387,18 @@
       <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--asset">
         <label>Image</label>
         <div class="form-fields">
-          <input type="text" value={config.default.image} readonly />
+          <input
+            type="text"
+            readonly
+            value={hasAttemptedSave && !config.default.image.trim() ? "Default image is required." : config.default.image}
+            class:sf2e-token-state-editor__input-error={hasAttemptedSave && !config.default.image.trim()}
+          />
           <button type="button" class="sf2e-token-state-editor__icon-button" on:click={openDefaultImageConfig} title="Configure image">
             <i class="fa-solid fa-gear"></i>
           </button>
         </div>
       </div>
     </article>
-    {#if hasAttemptedSave && !config.default.image.trim()}
-      <p class="sf2e-token-state-editor__field-error">Default image is required.</p>
-    {/if}
   </section>
 
   <section class="sf2e-token-state-editor__section">

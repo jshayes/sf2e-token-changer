@@ -27,6 +27,11 @@
   line-height: 1.2;
 }
 
+.sf2e-token-state-editor__input-error {
+  border-color: var(--color-level-error, #b71c1c) !important;
+  color: var(--color-level-error, #b71c1c);
+}
+
 .sf2e-token-state-editor__empty-state {
   height: 170px;
   display: flex;
