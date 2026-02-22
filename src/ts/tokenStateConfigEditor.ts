@@ -44,6 +44,7 @@ export type TokenStateUiConfig = {
 type EditorHost = {
   id?: string;
   title?: string;
+  object?: unknown;
 };
 
 function randomId(): string {
@@ -74,13 +75,12 @@ function defaultCondition(
   }
 }
 
-export function createDefaultTokenStateUiConfig(): TokenStateUiConfig {
+export function createDefaultTokenStateUiConfig(
+  token: foundry.documents.TokenDocument,
+): TokenStateUiConfig {
   return {
     version: 1,
-    default: {
-      image: "",
-      scale: 1,
-    },
+    default: getDefaultImage(token),
     tokenStates: [],
     sounds: [],
   };
@@ -222,6 +222,20 @@ function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+function getDefaultImage(token: foundry.documents.TokenDocument): {
+  image: string;
+  scale: number;
+} {
+  if (token.ring.enabled) {
+    return {
+      image: token.ring.subject.texture ?? token.texture.src ?? "",
+      scale: token.ring.subject.scale ?? token.texture.scaleX,
+    };
+  }
+
+  return { image: token.texture.src ?? "", scale: token.texture.scaleX };
+}
+
 class TokenStateConfigEditorApplication extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2,
 ) {
@@ -346,7 +360,10 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
   }
 }
 
-function attachTokenSheetEditorButton(app: unknown, html: unknown): void {
+function attachTokenSheetEditorButton(
+  token: foundry.documents.TokenDocument,
+  html: unknown,
+): void {
   const root = getTokenConfigRootElement(html);
   if (!root) return;
 
@@ -363,21 +380,20 @@ function attachTokenSheetEditorButton(app: unknown, html: unknown): void {
   button.addEventListener("click", (event) => {
     event.preventDefault();
 
-    let config = createDefaultTokenStateUiConfig();
+    let config = createDefaultTokenStateUiConfig(token);
     try {
       const parsed = validateTokenStateConfigJSON(field.value);
-      config = parsed ?? createDefaultTokenStateUiConfig();
+      config = parsed ?? config;
     } catch (error) {
       ui.notifications.warn(
         `Invalid structured config JSON. Loading defaults in editor: ${(error as Error).message}`,
       );
     }
 
-    const host = app as EditorHost;
     const editor = new TokenStateConfigEditorApplication({
       config,
       targetField: field,
-      host,
+      host: token,
     });
     void editor.render(true);
   });
@@ -386,11 +402,11 @@ function attachTokenSheetEditorButton(app: unknown, html: unknown): void {
 const hooks = new HooksManager();
 export function registerTokenStateConfigEditorHooks(): void {
   hooks.on("renderTokenConfig", (app, html) => {
-    attachTokenSheetEditorButton(app, html);
+    attachTokenSheetEditorButton(app.document, html);
   });
 
   hooks.on("renderPrototypeTokenConfig", (app, html) => {
-    attachTokenSheetEditorButton(app, html);
+    attachTokenSheetEditorButton(app.document, html);
   });
 }
 
