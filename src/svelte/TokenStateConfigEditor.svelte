@@ -370,8 +370,7 @@
     const names = values.map(
       (slug) => conditionOptions.find((option) => option.slug === slug)?.name ?? slug,
     );
-    const text = names.join(", ");
-    return text.length > 40 ? `${text.slice(0, 37)}...` : text;
+    return names.join(", ");
   }
 
   function formatConditionSummary(condition: UiCondition): string {
@@ -852,16 +851,22 @@
                       <label>Status Slugs</label>
                       <div class="form-fields">
                         <div class="sf2e-token-state-editor__multiselect" on:pointerdown|stopPropagation>
-                          <button
-                            type="button"
-                            class="sf2e-token-state-editor__multiselect-trigger"
-                            on:pointerdown|stopPropagation|preventDefault={() => (openConditionPickerKey = openConditionPickerKey === `token-state-modal:${conditionIndex}` ? null : `token-state-modal:${conditionIndex}`)}
-                            title={condition.value.join(", ")}
-                          >
-                            <span class="sf2e-token-state-editor__multiselect-trigger-text">
-                              {conditionDisplayText(condition.value)}
-                            </span>
-                          </button>
+                          <div class="form-fields">
+                            <input
+                              type="text"
+                              readonly
+                              value={conditionDisplayText(condition.value)}
+                              title={condition.value.join(", ")}
+                            />
+                            <button
+                              type="button"
+                              class="sf2e-token-state-editor__icon-button"
+                              title="Select conditions"
+                              on:pointerdown|stopPropagation|preventDefault={() => (openConditionPickerKey = openConditionPickerKey === `token-state-modal:${conditionIndex}` ? null : `token-state-modal:${conditionIndex}`)}
+                            >
+                              <i class="fa-solid fa-gear"></i>
+                            </button>
+                          </div>
                           {#if openConditionPickerKey === `token-state-modal:${conditionIndex}`}
                             <div class="sf2e-token-state-editor__multiselect-popover">
                               {#each conditionOptions as option}
