@@ -61,64 +61,23 @@
 <svelte:window on:pointerdown={() => (openConditionPickerKey = null)} />
 
 <ModalShell title="Configure Sound Trigger & Conditions" wide={true} onClose={onClose}>
-  <div class="sf2e-token-state-editor__section-header">
-    <h3>Trigger</h3>
-  </div>
-
-  <div class="sf2e-token-state-editor__condition-modal-header">
-    <span>Type</span>
-    <span>Trigger Config</span>
-  </div>
-  <div class="sf2e-token-state-editor__condition-modal-rows">
-    <div class="sf2e-token-state-editor__condition-modal-row">
-      <div class="form-group">
-        <label>Type</label>
-        <div class="form-fields">
-          <select
-            value={modal.trigger.type}
-            on:change={(e) => setTriggerType((e.currentTarget as HTMLSelectElement).value as ConditionType)}
-          >
-            {#each conditionTypeOptions as option}
-              <option value={option.value}>{option.label}</option>
-            {/each}
-          </select>
-        </div>
-      </div>
-
-      <ConditionConfigFields
-        condition={modal.trigger}
-        {numericOperatorOptions}
-        {conditionOptions}
-        {conditionDisplayText}
-        {openConditionPickerKey}
-        setOpenConditionPickerKey={setOpenPickerKey}
-        pickerKey="sound-modal:trigger"
-        onUpdate={updateTrigger}
-      />
+  <section class="sf2e-token-state-editor__section">
+    <div class="sf2e-token-state-editor__section-header">
+      <h3>Trigger</h3>
     </div>
-  </div>
 
-  <div class="sf2e-token-state-editor__section-header" style="margin-top: 0.75rem;">
-    <h3>Optional Conditions</h3>
-    <button type="button" title="Add condition" on:click={addCondition}>
-      <i class="fa-solid fa-plus"></i>
-    </button>
-  </div>
-
-  <div class="sf2e-token-state-editor__condition-modal-header">
-    <span>Type</span>
-    <span>Condition Config</span>
-    <span>Actions</span>
-  </div>
-  <div class="sf2e-token-state-editor__condition-modal-rows">
-    {#each modal.conditions as condition, conditionIndex}
+    <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__condition-modal-header">
+      <span>Type</span>
+      <span>Trigger Config</span>
+    </div>
+    <div class="sf2e-token-state-editor__condition-modal-rows">
       <div class="sf2e-token-state-editor__condition-modal-row">
         <div class="form-group">
           <label>Type</label>
           <div class="form-fields">
             <select
-              value={condition.type}
-              on:change={(e) => setConditionType(conditionIndex, (e.currentTarget as HTMLSelectElement).value as ConditionType)}
+              value={modal.trigger.type}
+              on:change={(e) => setTriggerType((e.currentTarget as HTMLSelectElement).value as ConditionType)}
             >
               {#each conditionTypeOptions as option}
                 <option value={option.value}>{option.label}</option>
@@ -126,29 +85,76 @@
             </select>
           </div>
         </div>
+
         <ConditionConfigFields
-          {condition}
+          condition={modal.trigger}
           {numericOperatorOptions}
           {conditionOptions}
           {conditionDisplayText}
           {openConditionPickerKey}
           setOpenConditionPickerKey={setOpenPickerKey}
-          pickerKey={`sound-modal:condition:${conditionIndex}`}
-          onUpdate={(updater) => updateCondition(conditionIndex, updater)}
+          pickerKey="sound-modal:trigger"
+          onUpdate={updateTrigger}
         />
-        <div class="sf2e-token-state-editor__condition-modal-row-actions">
-          <button
-            type="button"
-            class="sf2e-token-state-editor__icon-button"
-            title="Remove condition"
-            on:click={() => removeCondition(conditionIndex)}
-          >
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
       </div>
-    {/each}
+    </div>
+  </section>
+
+  <div class="sf2e-token-state-editor__section-header" style="margin-top: 0.75rem;">
+    <h3>Conditions</h3>
+    <button type="button" title="Add condition" on:click={addCondition}>
+      <i class="fa-solid fa-plus"></i>
+    </button>
   </div>
+
+  {#if modal.conditions.length === 0}
+    <p class="sf2e-token-state-editor__empty-state">No conditions</p>
+  {:else}
+    <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__condition-modal-header">
+      <span>Type</span>
+      <span>Condition Config</span>
+      <span>Actions</span>
+    </div>
+    <div class="sf2e-token-state-editor__condition-modal-rows">
+      {#each modal.conditions as condition, conditionIndex}
+        <div class="sf2e-token-state-editor__condition-modal-row">
+          <div class="form-group">
+            <label>Type</label>
+            <div class="form-fields">
+              <select
+                value={condition.type}
+                on:change={(e) => setConditionType(conditionIndex, (e.currentTarget as HTMLSelectElement).value as ConditionType)}
+              >
+                {#each conditionTypeOptions as option}
+                  <option value={option.value}>{option.label}</option>
+                {/each}
+              </select>
+            </div>
+          </div>
+          <ConditionConfigFields
+            {condition}
+            {numericOperatorOptions}
+            {conditionOptions}
+            {conditionDisplayText}
+            {openConditionPickerKey}
+            setOpenConditionPickerKey={setOpenPickerKey}
+            pickerKey={`sound-modal:condition:${conditionIndex}`}
+            onUpdate={(updater) => updateCondition(conditionIndex, updater)}
+          />
+          <div class="sf2e-token-state-editor__condition-modal-row-actions">
+            <button
+              type="button"
+              class="sf2e-token-state-editor__icon-button"
+              title="Remove condition"
+              on:click={() => removeCondition(conditionIndex)}
+            >
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <footer class="sf2e-token-state-editor__modal-footer">
     <button type="button" on:click={onSave}>Save Configuration</button>

@@ -60,7 +60,7 @@
     </button>
   </div>
 
-  <div class="sf2e-token-state-editor__condition-modal-header">
+  <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__condition-modal-header">
     <span>Type</span>
     <span>Condition Config</span>
     <span>Actions</span>

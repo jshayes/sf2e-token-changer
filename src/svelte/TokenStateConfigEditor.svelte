@@ -314,13 +314,9 @@
   <section class="sf2e-token-state-editor__section">
     <h3>Default</h3>
     <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--default">
-      <span>Row</span><span>Image</span><span>Scale</span>
+      <span>Image</span>
     </div>
     <article class="sf2e-token-state-editor__row sf2e-token-state-editor__row--default">
-      <div class="sf2e-token-state-editor__row-toolbar">
-        <strong>Default</strong>
-      </div>
-
       <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--asset">
         <label>Image</label>
         <div class="form-fields">
@@ -330,14 +326,6 @@
           </button>
         </div>
       </div>
-
-      <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--value">
-        <label>Scale</label>
-        <div class="form-fields">
-          <input type="number" value={config.default.scale.toFixed(2)} readonly />
-        </div>
-      </div>
-
     </article>
   </section>
 
@@ -346,24 +334,28 @@
       <h3>Token States</h3>
       <button type="button" on:click={addTokenState}><i class="fa-solid fa-plus"></i></button>
     </div>
-    <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--token">
-      <span>Row</span><span>Name</span><span>Condition</span><span>Image</span>
-    </div>
-    <div class="sf2e-token-state-editor__rows" data-list="tokenStates">
-      {#each config.tokenStates as row, index (row.id)}
-        <TokenStateRow
-          {row}
-          {index}
-          onNameInput={updateConfig}
-          onOpenConditions={openTokenStateConditionsConfig}
-          onOpenImage={openTokenStateImageConfig}
-          onRemove={(rowIndex) => removeRow("tokenStates", rowIndex)}
-          onDragStart={(event, rowIndex) => startDrag(event, "tokenStates", rowIndex)}
-          onDragOver={dragOver}
-          onDrop={(event, rowIndex) => dropOn(event, "tokenStates", rowIndex)}
-        />
-      {/each}
-    </div>
+    {#if config.tokenStates.length === 0}
+      <p class="sf2e-token-state-editor__empty-state">No token states configured</p>
+    {:else}
+      <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--token">
+        <span>Row</span><span>Name</span><span>Condition</span><span>Image</span>
+      </div>
+      <div class="sf2e-token-state-editor__rows" data-list="tokenStates">
+        {#each config.tokenStates as row, index (row.id)}
+          <TokenStateRow
+            {row}
+            {index}
+            onNameInput={updateConfig}
+            onOpenConditions={openTokenStateConditionsConfig}
+            onOpenImage={openTokenStateImageConfig}
+            onRemove={(rowIndex) => removeRow("tokenStates", rowIndex)}
+            onDragStart={(event, rowIndex) => startDrag(event, "tokenStates", rowIndex)}
+            onDragOver={dragOver}
+            onDrop={(event, rowIndex) => dropOn(event, "tokenStates", rowIndex)}
+          />
+        {/each}
+      </div>
+    {/if}
   </section>
 
   <section class="sf2e-token-state-editor__section">
@@ -371,24 +363,28 @@
       <h3>Sounds</h3>
       <button type="button" on:click={addSound}><i class="fa-solid fa-plus"></i></button>
     </div>
-    <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--sound">
-      <span>Row</span><span>Name</span><span>Condition</span><span>Sound</span>
-    </div>
-    <div class="sf2e-token-state-editor__rows" data-list="sounds">
-      {#each config.sounds as row, index (row.id)}
-        <SoundRow
-          {row}
-          {index}
-          onNameInput={updateConfig}
-          onOpenConditions={openSoundConditionsConfig}
-          onOpenSound={openSoundConfig}
-          onRemove={(rowIndex) => removeRow("sounds", rowIndex)}
-          onDragStart={(event, rowIndex) => startDrag(event, "sounds", rowIndex)}
-          onDragOver={dragOver}
-          onDrop={(event, rowIndex) => dropOn(event, "sounds", rowIndex)}
-        />
-      {/each}
-    </div>
+    {#if config.sounds.length === 0}
+      <p class="sf2e-token-state-editor__empty-state">No sounds configured</p>
+    {:else}
+      <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--sound">
+        <span>Row</span><span>Name</span><span>Condition</span><span>Sound</span>
+      </div>
+      <div class="sf2e-token-state-editor__rows" data-list="sounds">
+        {#each config.sounds as row, index (row.id)}
+          <SoundRow
+            {row}
+            {index}
+            onNameInput={updateConfig}
+            onOpenConditions={openSoundConditionsConfig}
+            onOpenSound={openSoundConfig}
+            onRemove={(rowIndex) => removeRow("sounds", rowIndex)}
+            onDragStart={(event, rowIndex) => startDrag(event, "sounds", rowIndex)}
+            onDragOver={dragOver}
+            onDrop={(event, rowIndex) => dropOn(event, "sounds", rowIndex)}
+          />
+        {/each}
+      </div>
+    {/if}
   </section>
 
   <section class="sf2e-token-state-editor__section">
