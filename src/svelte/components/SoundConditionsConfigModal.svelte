@@ -2,29 +2,63 @@
   import ConditionConfigFields from "./ConditionConfigFields.svelte";
   import ModalShell from "./ModalShell.svelte";
   import type { SoundConditionsModalState } from "../helpers/editor-types";
+  import { defaultCondition } from "../helpers/conditions";
   import type { ConditionOption, ConditionType, NumericOperator, UiCondition } from "../helpers/conditions";
 
   export let modal: SoundConditionsModalState;
   export let conditionTypeOptions: Array<{ value: ConditionType; label: string }>;
   export let numericOperatorOptions: Array<{ value: NumericOperator; label: string }>;
   export let conditionOptions: ConditionOption[];
-  export let openConditionPickerKey: string | null;
-  export let setOpenConditionPickerKey: (key: string | null) => void;
   export let conditionDisplayText: (values: string[]) => string;
 
   export let onClose: () => void;
-  export let onSetTriggerType: (type: ConditionType) => void;
-  export let onUpdateTrigger: (updater: (condition: UiCondition) => void) => void;
-  export let onAddCondition: () => void;
-  export let onSetConditionType: (conditionIndex: number, type: ConditionType) => void;
-  export let onUpdateCondition: (
-    conditionIndex: number,
-    updater: (condition: UiCondition) => void,
-  ) => void;
-  export let onRemoveCondition: (conditionIndex: number) => void;
   export let onSave: () => void;
 
+  let openConditionPickerKey: string | null = null;
+
+  function updateTrigger(updater: (condition: UiCondition) => void): void {
+    updater(modal.trigger);
+    modal = { ...modal, trigger: { ...modal.trigger } };
+  }
+
+  function setTriggerType(type: ConditionType): void {
+    modal = { ...modal, trigger: defaultCondition(type) };
+    if (openConditionPickerKey === "sound-modal:trigger") openConditionPickerKey = null;
+  }
+
+  function addCondition(): void {
+    modal = { ...modal, conditions: [...modal.conditions, defaultCondition("hp-percent")] };
+  }
+
+  function setConditionType(conditionIndex: number, type: ConditionType): void {
+    const conditions = [...modal.conditions];
+    if (!conditions[conditionIndex]) return;
+    conditions[conditionIndex] = defaultCondition(type);
+    modal = { ...modal, conditions };
+    if (openConditionPickerKey === `sound-modal:condition:${conditionIndex}`) openConditionPickerKey = null;
+  }
+
+  function updateCondition(conditionIndex: number, updater: (condition: UiCondition) => void): void {
+    const conditions = [...modal.conditions];
+    const condition = conditions[conditionIndex];
+    if (!condition) return;
+    updater(condition);
+    modal = { ...modal, conditions };
+  }
+
+  function removeCondition(conditionIndex: number): void {
+    const conditions = [...modal.conditions];
+    conditions.splice(conditionIndex, 1);
+    modal = { ...modal, conditions };
+    if (openConditionPickerKey?.startsWith("sound-modal:condition:")) openConditionPickerKey = null;
+  }
+
+  function setOpenPickerKey(key: string | null): void {
+    openConditionPickerKey = key;
+  }
 </script>
+
+<svelte:window on:pointerdown={() => (openConditionPickerKey = null)} />
 
 <ModalShell title="Configure Sound Trigger & Conditions" wide={true} onClose={onClose}>
   <div class="sf2e-token-state-editor__section-header">
@@ -42,7 +76,7 @@
         <div class="form-fields">
           <select
             value={modal.trigger.type}
-            on:change={(e) => onSetTriggerType((e.currentTarget as HTMLSelectElement).value as ConditionType)}
+            on:change={(e) => setTriggerType((e.currentTarget as HTMLSelectElement).value as ConditionType)}
           >
             {#each conditionTypeOptions as option}
               <option value={option.value}>{option.label}</option>
@@ -57,16 +91,16 @@
         {conditionOptions}
         {conditionDisplayText}
         {openConditionPickerKey}
-        {setOpenConditionPickerKey}
+        setOpenConditionPickerKey={setOpenPickerKey}
         pickerKey="sound-modal:trigger"
-        onUpdate={onUpdateTrigger}
+        onUpdate={updateTrigger}
       />
     </div>
   </div>
 
   <div class="sf2e-token-state-editor__section-header" style="margin-top: 0.75rem;">
     <h3>Optional Conditions</h3>
-    <button type="button" title="Add condition" on:click={onAddCondition}>
+    <button type="button" title="Add condition" on:click={addCondition}>
       <i class="fa-solid fa-plus"></i>
     </button>
   </div>
@@ -84,7 +118,7 @@
           <div class="form-fields">
             <select
               value={condition.type}
-              on:change={(e) => onSetConditionType(conditionIndex, (e.currentTarget as HTMLSelectElement).value as ConditionType)}
+              on:change={(e) => setConditionType(conditionIndex, (e.currentTarget as HTMLSelectElement).value as ConditionType)}
             >
               {#each conditionTypeOptions as option}
                 <option value={option.value}>{option.label}</option>
@@ -98,16 +132,16 @@
           {conditionOptions}
           {conditionDisplayText}
           {openConditionPickerKey}
-          {setOpenConditionPickerKey}
+          setOpenConditionPickerKey={setOpenPickerKey}
           pickerKey={`sound-modal:condition:${conditionIndex}`}
-          onUpdate={(updater) => onUpdateCondition(conditionIndex, updater)}
+          onUpdate={(updater) => updateCondition(conditionIndex, updater)}
         />
         <div class="sf2e-token-state-editor__condition-modal-row-actions">
           <button
             type="button"
             class="sf2e-token-state-editor__icon-button"
             title="Remove condition"
-            on:click={() => onRemoveCondition(conditionIndex)}
+            on:click={() => removeCondition(conditionIndex)}
           >
             <i class="fa-solid fa-trash"></i>
           </button>

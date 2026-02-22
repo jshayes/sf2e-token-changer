@@ -280,63 +280,6 @@
     openConditionPickerKey = null;
   }
 
-  function setSoundTriggerModalType(type: ConditionType): void {
-    if (!soundConditionsConfigModal) return;
-    soundConditionsConfigModal = {
-      ...soundConditionsConfigModal,
-      trigger: defaultCondition(type),
-    };
-    if (openConditionPickerKey === "sound-modal:trigger") openConditionPickerKey = null;
-  }
-
-  function updateSoundTriggerModal(updater: (condition: UiCondition) => void): void {
-    if (!soundConditionsConfigModal) return;
-    const trigger = deepClone(soundConditionsConfigModal.trigger);
-    updater(trigger);
-    soundConditionsConfigModal = { ...soundConditionsConfigModal, trigger };
-  }
-
-  function addSoundConditionModalRow(): void {
-    if (!soundConditionsConfigModal) return;
-    soundConditionsConfigModal = {
-      ...soundConditionsConfigModal,
-      conditions: [...soundConditionsConfigModal.conditions, defaultCondition("hp-percent")],
-    };
-  }
-
-  function removeSoundConditionModalRow(conditionIndex: number): void {
-    if (!soundConditionsConfigModal) return;
-    const conditions = [...soundConditionsConfigModal.conditions];
-    conditions.splice(conditionIndex, 1);
-    soundConditionsConfigModal = { ...soundConditionsConfigModal, conditions };
-    if (openConditionPickerKey?.startsWith("sound-modal:condition:")) {
-      openConditionPickerKey = null;
-    }
-  }
-
-  function setSoundConditionModalType(conditionIndex: number, type: ConditionType): void {
-    if (!soundConditionsConfigModal) return;
-    const conditions = [...soundConditionsConfigModal.conditions];
-    if (!conditions[conditionIndex]) return;
-    conditions[conditionIndex] = defaultCondition(type);
-    soundConditionsConfigModal = { ...soundConditionsConfigModal, conditions };
-    if (openConditionPickerKey === `sound-modal:condition:${conditionIndex}`) {
-      openConditionPickerKey = null;
-    }
-  }
-
-  function updateSoundConditionModalCondition(
-    conditionIndex: number,
-    updater: (condition: UiCondition) => void,
-  ): void {
-    if (!soundConditionsConfigModal) return;
-    const conditions = [...soundConditionsConfigModal.conditions];
-    const condition = conditions[conditionIndex];
-    if (!condition) return;
-    updater(condition);
-    soundConditionsConfigModal = { ...soundConditionsConfigModal, conditions };
-  }
-
   function saveSoundConditionsConfigModal(): void {
     if (!soundConditionsConfigModal) return;
     const row = config.sounds[soundConditionsConfigModal.target.index];
@@ -556,16 +499,8 @@
       {conditionTypeOptions}
       {numericOperatorOptions}
       {conditionOptions}
-      {openConditionPickerKey}
-      setOpenConditionPickerKey={(key) => (openConditionPickerKey = key)}
       {conditionDisplayText}
       onClose={closeSoundConditionsConfigModal}
-      onSetTriggerType={setSoundTriggerModalType}
-      onUpdateTrigger={updateSoundTriggerModal}
-      onAddCondition={addSoundConditionModalRow}
-      onSetConditionType={setSoundConditionModalType}
-      onUpdateCondition={updateSoundConditionModalCondition}
-      onRemoveCondition={removeSoundConditionModalRow}
       onSave={saveSoundConditionsConfigModal}
     />
   {/if}
