@@ -308,8 +308,6 @@
 
 </script>
 
-<svelte:window on:pointerdown={closeConditionPicker} />
-
 <section class="sf2e-token-state-editor svelte-editor">
   <section class="sf2e-token-state-editor__section">
     <h3>Default</h3>
