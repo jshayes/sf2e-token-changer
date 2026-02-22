@@ -31,7 +31,6 @@ export type SoundTriggerRuleConfig = {
 export type TokenStateUiConfig = {
   version: 1;
   default: {
-    bindExplicitly: boolean;
     image: string;
     scale: number;
   };
@@ -76,7 +75,6 @@ export function createDefaultTokenStateUiConfig(): TokenStateUiConfig {
   return {
     version: 1,
     default: {
-      bindExplicitly: true,
       image: "",
       scale: 1,
     },
@@ -161,10 +159,6 @@ export function normalizeTokenStateUiConfig(raw: unknown): TokenStateUiConfig {
   return {
     version: 1,
     default: {
-      bindExplicitly:
-        typeof input.default?.bindExplicitly === "boolean"
-          ? input.default.bindExplicitly
-          : true,
       image:
         typeof input.default?.image === "string" ? input.default.image : "",
       scale: clamp(Number(input.default?.scale ?? 1), 0.1, 3),
@@ -206,7 +200,7 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
 ) {
   static override DEFAULT_OPTIONS = {
     classes: ["sf2e-token-state-config-editor-app"],
-    position: { width: 1400, height: 760 },
+    position: { width: 1380, height: 760 },
     window: { title: "Token State Config Editor", resizable: true },
   };
 

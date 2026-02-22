@@ -2,6 +2,11 @@
   overflow: auto;
 }
 
+.sf2e-token-state-editor__section-header {
+  display: flex;
+  gap: 1rem;
+}
+
 .sf2e-token-state-editor__row-header {
   display: grid;
   gap: 0.5rem;
@@ -14,16 +19,20 @@
 }
 
 .sf2e-token-state-editor__row-header--token {
-  grid-template-columns: 32px 170px 320px minmax(280px, 1fr) 170px 90px;
+  grid-template-columns: 32px 170px 320px minmax(280px, 1fr) 218px 90px;
 }
 
 .sf2e-token-state-editor__row-header--sound {
-  grid-template-columns: 32px 170px 320px minmax(280px, 1fr) 170px 90px;
+  grid-template-columns: 32px 170px 320px minmax(280px, 1fr) 218px 90px;
+}
+
+.sf2e-token-state-editor__row-header--default {
+  grid-template-columns: 80px minmax(280px, 1fr) 218px;
 }
 
 .sf2e-token-state-editor__row {
   display: grid;
-  grid-template-columns: 32px 170px 320px minmax(280px, 1fr) 170px 90px;
+  grid-template-columns: 32px 170px 320px minmax(280px, 1fr) 218px 90px;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
@@ -31,6 +40,10 @@
   border: 1px solid var(--color-border-light-primary);
   border-radius: 6px;
   overflow: visible;
+}
+
+.sf2e-token-state-editor__row--default {
+  grid-template-columns: 80px minmax(280px, 1fr) 218px;
 }
 
 .sf2e-token-state-editor__row-toolbar {
@@ -78,6 +91,21 @@
   min-width: 140px;
 }
 
+.sf2e-token-state-editor__cell--condition .form-group:first-child select {
+  min-width: 4.5rem;
+  width: 4.5rem;
+}
+
+.sf2e-token-state-editor__cell--condition .form-group:only-child select {
+  min-width: 7rem;
+  width: 7rem;
+}
+
+.sf2e-token-state-editor__status-operator-select {
+  min-width: 6.5rem !important;
+  width: 6.5rem;
+}
+
 .sf2e-token-state-editor__cell--asset input[type="text"] {
   min-width: 0;
   width: 100%;
@@ -89,6 +117,37 @@
 
 .sf2e-token-state-editor__row input[type="range"] {
   width: 8rem;
+}
+
+.sf2e-token-state-editor__cell--value .form-fields {
+  gap: 0.25rem;
+}
+
+.sf2e-token-state-editor__cell--value input[type="range"] {
+  width: 9.35rem;
+}
+
+.sf2e-token-state-editor__cell--value input[type="number"] {
+  text-align: center;
+  width: 3rem;
+}
+
+.sf2e-token-state-editor__row--default
+  .sf2e-token-state-editor__cell--value
+  .form-fields {
+  gap: 0.25rem;
+}
+
+.sf2e-token-state-editor__row--default
+  .sf2e-token-state-editor__cell--value
+  input[type="range"] {
+  width: 9.25rem;
+}
+
+.sf2e-token-state-editor__row--default
+  .sf2e-token-state-editor__cell--value
+  input[type="number"] {
+  width: 3.1rem;
 }
 
 .sf2e-token-state-editor__cell--asset .form-fields {

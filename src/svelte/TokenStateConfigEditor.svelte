@@ -26,7 +26,6 @@
   type TokenStateUiConfig = {
     version: 1;
     default: {
-      bindExplicitly: boolean;
       image: string;
       scale: number;
     };
@@ -260,40 +259,40 @@
 <svelte:window on:pointerdown={closeConditionPicker} />
 
 <section class="sf2e-token-state-editor svelte-editor">
-  <header class="sf2e-token-state-editor__header">
-    <p class="notes">Reactive editor (Svelte) for token state config JSON.</p>
-  </header>
-
   <section class="sf2e-token-state-editor__section">
     <h3>Default</h3>
-    <div class="form-group">
-      <label>Image</label>
-      <div class="form-fields">
-        <input type="text" bind:value={config.default.image} />
-        <button type="button" on:click={pickDefaultImage}>Browse</button>
-      </div>
+    <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--default">
+      <span>Row</span><span>Image</span><span>Scale</span>
     </div>
-    <div class="form-group">
-      <label>Scale</label>
-      <div class="form-fields">
-        <input type="range" min="0.1" max="3" step="0.05" bind:value={config.default.scale} on:input={(e) => setDefaultScale(Number((e.currentTarget as HTMLInputElement).value))} />
-        <input type="number" min="0.1" max="3" step="0.05" bind:value={config.default.scale} on:input={(e) => setDefaultScale(Number((e.currentTarget as HTMLInputElement).value))} />
+    <article class="sf2e-token-state-editor__row sf2e-token-state-editor__row--default">
+      <div class="sf2e-token-state-editor__row-toolbar">
+        <strong>Default</strong>
       </div>
-    </div>
-    <div class="form-group">
-      <label>Explicit Binding</label>
-      <div class="form-fields">
-        <input type="checkbox" bind:checked={config.default.bindExplicitly} />
+
+      <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--asset">
+        <label>Image</label>
+        <div class="form-fields">
+          <input type="text" bind:value={config.default.image} />
+          <button type="button" on:click={pickDefaultImage}>Browse</button>
+        </div>
       </div>
-    </div>
+
+      <div class="form-group sf2e-token-state-editor__cell sf2e-token-state-editor__cell--value">
+        <label>Scale</label>
+        <div class="form-fields">
+          <input type="range" min="0.1" max="3" step="0.05" bind:value={config.default.scale} on:input={(e) => setDefaultScale(Number((e.currentTarget as HTMLInputElement).value))} />
+          <input type="number" min="0.1" max="3" step="0.05" bind:value={config.default.scale} on:input={(e) => setDefaultScale(Number((e.currentTarget as HTMLInputElement).value))} />
+        </div>
+      </div>
+
+    </article>
   </section>
 
   <section class="sf2e-token-state-editor__section">
     <div class="sf2e-token-state-editor__section-header">
       <h3>Token States</h3>
-      <button type="button" on:click={addTokenState}>Add State</button>
+      <button type="button" on:click={addTokenState}><i class="fa-solid fa-plus"></i></button>
     </div>
-    <p class="notes">Rows are evaluated top to bottom. Drag handle sets priority.</p>
     <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--token">
       <span>Row</span><span>Type</span><span>Condition</span><span>Image</span><span>Scale</span><span>Actions</span>
     </div>
@@ -320,7 +319,10 @@
               <div class="form-group">
                 <label>Operator</label>
                 <div class="form-fields">
-                  <select value={row.condition.operator} on:change={(e) => setConditionOperator(row, (e.currentTarget as HTMLSelectElement).value)}>
+                  <select
+                    value={row.condition.operator}
+                    on:change={(e) => setConditionOperator(row, (e.currentTarget as HTMLSelectElement).value)}
+                  >
                     {#each numericOperatorOptions as option}
                       <option value={option.value}>{option.label}</option>
                     {/each}
@@ -354,7 +356,11 @@
               <div class="form-group">
                 <label>Operator</label>
                 <div class="form-fields">
-                  <select value={row.condition.operator} on:change={(e) => setConditionOperator(row, (e.currentTarget as HTMLSelectElement).value)}>
+                  <select
+                    class="sf2e-token-state-editor__status-operator-select"
+                    value={row.condition.operator}
+                    on:change={(e) => setConditionOperator(row, (e.currentTarget as HTMLSelectElement).value)}
+                  >
                     <option value="any-of">Any Of</option>
                     <option value="all-of">All Of</option>
                   </select>
@@ -422,9 +428,8 @@
   <section class="sf2e-token-state-editor__section">
     <div class="sf2e-token-state-editor__section-header">
       <h3>Sounds</h3>
-      <button type="button" on:click={addSound}>Add Sound Trigger</button>
+      <button type="button" on:click={addSound}><i class="fa-solid fa-plus"></i></button>
     </div>
-    <p class="notes">Sounds are transition triggers and should fire once when entering a matching state.</p>
     <div class="sf2e-token-state-editor__row-header sf2e-token-state-editor__row-header--sound">
       <span>Row</span><span>Type</span><span>Condition</span><span>Sound</span><span>Volume</span><span>Actions</span>
     </div>
@@ -451,7 +456,11 @@
               <div class="form-group">
                 <label>Operator</label>
                 <div class="form-fields">
-                  <select value={row.condition.operator} on:change={(e) => setConditionOperator(row, (e.currentTarget as HTMLSelectElement).value)}>
+                  <select
+                    class="sf2e-token-state-editor__status-operator-select"
+                    value={row.condition.operator}
+                    on:change={(e) => setConditionOperator(row, (e.currentTarget as HTMLSelectElement).value)}
+                  >
                     {#each numericOperatorOptions as option}
                       <option value={option.value}>{option.label}</option>
                     {/each}
