@@ -385,11 +385,6 @@
     {/if}
   </section>
 
-  <section class="sf2e-token-state-editor__section">
-    <h3>JSON Preview</h3>
-    <textarea rows="10" spellcheck="false" readonly>{jsonPreview}</textarea>
-  </section>
-
   <footer class="sf2e-token-state-editor__footer">
     <button type="button" on:click={() => onApply(toSerializableConfig(config) as unknown as TokenStateUiConfig)}>Apply To Token Config</button>
     <button type="button" on:click={onClose}>Close</button>

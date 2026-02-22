@@ -11,7 +11,32 @@
   export let pickerKey: string;
   export let onUpdate: (updater: (condition: UiCondition) => void) => void;
 
+  let multiselectRoot: HTMLDivElement | null = null;
+  let statusSearch = "";
+
+  $: filteredConditionOptions = conditionOptions.filter((option) => {
+    const query = statusSearch.trim().toLowerCase();
+    if (!query) return true;
+    return (
+      option.name.toLowerCase().includes(query) ||
+      option.slug.toLowerCase().includes(query)
+    );
+  });
+
+  $: if (openConditionPickerKey !== pickerKey) {
+    statusSearch = "";
+  }
+
+  function closePickerOnOutsidePointerDown(event: PointerEvent): void {
+    if (openConditionPickerKey !== pickerKey) return;
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+    if (multiselectRoot?.contains(target)) return;
+    setOpenConditionPickerKey(null);
+  }
 </script>
+
+<svelte:window on:pointerdown|capture={closePickerOnOutsidePointerDown} />
 
 <div class="sf2e-token-state-editor__condition-modal-config">
   {#if condition.type === "hp-percent" || condition.type === "hp-value"}
@@ -105,7 +130,11 @@
     <div class="form-group">
       <label>Status Slugs</label>
       <div class="form-fields">
-        <div class="sf2e-token-state-editor__multiselect" on:pointerdown|stopPropagation>
+        <div
+          class="sf2e-token-state-editor__multiselect"
+          bind:this={multiselectRoot}
+          on:pointerdown|stopPropagation
+        >
           <div class="form-fields">
             <input
               type="text"
@@ -124,23 +153,37 @@
           </div>
           {#if openConditionPickerKey === pickerKey}
             <div class="sf2e-token-state-editor__multiselect-popover">
-              {#each conditionOptions as option}
-                <label class="sf2e-token-state-editor__multiselect-option">
-                  <input
-                    type="checkbox"
-                    checked={condition.value.includes(option.slug)}
-                    on:change={() =>
-                      onUpdate((c) => {
-                        if (c.type !== "status-effect") return;
-                        const selected = new Set(c.value);
-                        if (selected.has(option.slug)) selected.delete(option.slug);
-                        else selected.add(option.slug);
-                        c.value = Array.from(selected);
-                      })}
-                  />
-                  <span>{option.name}</span>
-                </label>
-              {/each}
+              <div class="sf2e-token-state-editor__multiselect-search">
+                <input
+                  type="text"
+                  placeholder="Search conditions..."
+                  bind:value={statusSearch}
+                  on:pointerdown|stopPropagation
+                />
+              </div>
+              {#if filteredConditionOptions.length === 0}
+                <p class="sf2e-token-state-editor__multiselect-empty">No matching conditions</p>
+              {:else}
+                <div class="sf2e-token-state-editor__multiselect-popover-items">
+                  {#each filteredConditionOptions as option}
+                    <label class="sf2e-token-state-editor__multiselect-option">
+                      <input
+                        type="checkbox"
+                        checked={condition.value.includes(option.slug)}
+                        on:change={() =>
+                          onUpdate((c) => {
+                            if (c.type !== "status-effect") return;
+                            const selected = new Set(c.value);
+                            if (selected.has(option.slug)) selected.delete(option.slug);
+                              else selected.add(option.slug);
+                            c.value = Array.from(selected);
+                          })}
+                      />
+                      <span>{option.name}</span>
+                    </label>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/if}
         </div>
