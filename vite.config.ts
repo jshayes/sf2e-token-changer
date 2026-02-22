@@ -1,4 +1,5 @@
-import { cp, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { defineConfig, type Plugin } from "vite";
 
 const moduleId = "sf2e-token-changer";
@@ -24,7 +25,7 @@ async function writeManifest(useDevEntry: boolean): Promise<void> {
   }
 
   manifest.esmodules = useDevEntry
-    ? [`${devServerOrigin}${basePath}scripts/module.js`]
+    ? [`${devServerOrigin}${basePath}ts/module.ts`]
     : ["scripts/module.js"];
   manifest.styles = [];
 
@@ -32,12 +33,41 @@ async function writeManifest(useDevEntry: boolean): Promise<void> {
 }
 
 function copyFoundryFiles(): Plugin {
+  const sourceRoot = path.resolve("src");
+  const templatesRoot = path.join(sourceRoot, "templates");
+  const isTemplateFile = (absolutePath: string): boolean =>
+    absolutePath.startsWith(templatesRoot) && absolutePath.endsWith(".hbs");
+
+  const syncTemplateFile = async (absolutePath: string): Promise<void> => {
+    const relativeToTemplates = path.relative(templatesRoot, absolutePath);
+    if (relativeToTemplates.startsWith("..")) return;
+
+    const outputPath = path.resolve("dist", "templates", relativeToTemplates);
+
+    try {
+      await mkdir(path.dirname(outputPath), { recursive: true });
+      await cp(absolutePath, outputPath);
+    } catch {
+      // If the source file was removed (delete/rename), remove the copied file too.
+      await rm(outputPath, { force: true });
+    }
+  };
+
   return {
     name: "copy-foundry-files",
     async configureServer() {
       await cp("src/languages", "dist/languages", { recursive: true });
       await cp("src/templates", "dist/templates", { recursive: true });
       await writeManifest(true);
+    },
+    async handleHotUpdate(context) {
+      const absolutePath = path.resolve(context.file);
+      if (!absolutePath.startsWith(sourceRoot)) return;
+      if (!isTemplateFile(absolutePath)) return;
+
+      await syncTemplateFile(absolutePath);
+      // Foundry caches templates aggressively, so force a page reload in dev.
+      context.server.ws.send({ type: "full-reload" });
     },
     async closeBundle() {
       await cp("src/languages", "dist/languages", { recursive: true });

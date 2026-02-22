@@ -1,13 +1,48 @@
 <div class="tab scrollable {{tab.cssClass}}" data-tab="sf2e-token-changer" data-group="sheet">
-  <h3>Token State Images</h3>
+  <h3>Token States</h3>
 
-  <label>Rules (JSON)</label>
+  <div class="form-group">
+    <label>Structured Config</label>
+    <div class="form-fields">
+      <button type="button" data-action="open-token-state-config-editor">
+        <i class="fa-solid fa-sliders"></i>
+        Configure Token States
+      </button>
+    </div>
+  </div>
+
+  <p class="notes">
+    Configure default token binding, state-based token images, and transition sound effects.
+    This editor stores a structured JSON config separately from the legacy rules JSON.
+  </p>
+
   <div class="form-group">
     {{#if source}}
-      <textarea name="flags.sf2e-token-changer.rulesJSON" rows="20" spellcheck="false">{{source.flags.sf2e-token-changer.rulesJSON}}</textarea>
+      <textarea
+        name="flags.sf2e-token-changer.configJSON"
+        rows="8"
+        spellcheck="false"
+        data-role="token-state-config-json"
+      >{{source.flags.sf2e-token-changer.configJSON}}</textarea>
     {{else}}
-      <textarea name="flags.sf2e-token-changer.rulesJSON" rows="20" spellcheck="false">{{document.flags.sf2e-token-changer.rulesJSON}}</textarea>
+      <textarea
+        name="flags.sf2e-token-changer.configJSON"
+        rows="8"
+        spellcheck="false"
+        data-role="token-state-config-json"
+      >{{document.flags.sf2e-token-changer.configJSON}}</textarea>
     {{/if}}
   </div>
-  <p class="notes">Advanced configuration. Must be valid JSON.</p>
+
+  <details>
+    <summary>Legacy Rules JSON (current runtime behavior)</summary>
+    <div class="form-group">
+      {{#if source}}
+        <textarea name="flags.sf2e-token-changer.rulesJSON" rows="16" spellcheck="false">{{source.flags.sf2e-token-changer.rulesJSON}}</textarea>
+      {{else}}
+        <textarea name="flags.sf2e-token-changer.rulesJSON" rows="16" spellcheck="false">{{document.flags.sf2e-token-changer.rulesJSON}}</textarea>
+      {{/if}}
+    </div>
+    <p class="notes">Existing rules engine input. Kept for compatibility while the new editor is being built out.</p>
+  </details>
 </div>

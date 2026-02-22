@@ -1,5 +1,10 @@
-import { TokenDocumentPF2e } from "foundry-pf2e";
 import { moduleId } from "./constants";
+import { HooksManager } from "./hooksManager";
+import {
+  getTokenStateConfigEditorTemplatePath,
+  validateTokenStateConfigJSON,
+  type TokenStateUiConfig,
+} from "./tokenStateConfigEditor";
 
 const tokenConfigTemplate = `modules/${moduleId}/templates/token-config.hbs`;
 const tokenImageFieldTemplate = `modules/${moduleId}/templates/components/token-image-field.hbs`;
@@ -48,6 +53,8 @@ type TokenRule = {
 type ModuleTokenFlags = {
   rules?: TokenRule[];
   rulesJSON?: string;
+  config?: TokenStateUiConfig | null;
+  configJSON?: string;
   _defaults?: {
     ring?: unknown;
     texture?: unknown;
@@ -411,11 +418,15 @@ function handleCanvasEvent(currentCanvas: {
   void handleTokenEvents(docs, true);
 }
 
+const hooks = new HooksManager();
 export function registerTokenChangerHooks(): void {
-  Hooks.on("ready", async () => {
+  hooks.on("ready", async () => {
     if (!game.user.isGM) return;
 
-    await loadModuleTemplates([tokenImageFieldTemplate]);
+    await loadModuleTemplates([
+      tokenImageFieldTemplate,
+      getTokenStateConfigEditorTemplatePath(),
+    ]);
 
     addTokenStatesTab(
       foundry.applications.sheets.TokenConfig as unknown as {
@@ -431,7 +442,7 @@ export function registerTokenChangerHooks(): void {
     );
   });
 
-  Hooks.once("ready", () => {
+  hooks.once("ready", () => {
     if (!game.user.isGM) return;
 
     game.socket.on(`module.${moduleId}`, async (data: unknown) => {
@@ -444,63 +455,105 @@ export function registerTokenChangerHooks(): void {
     });
   });
 
-  Hooks.on("preUpdateActor", (_actor, changes) => {
+  hooks.on("preUpdateActor", (_actor, changes) => {
+    type TokenStateFlagDraft = {
+      rulesJSON?: unknown;
+      rules?: TokenRule[] | null;
+      configJSON?: unknown;
+      config?: TokenStateUiConfig | null;
+    };
+
     const draft = changes as {
       prototypeToken?: {
-        flags?: Record<
-          string,
-          { rulesJSON?: unknown; rules?: TokenRule[] | null }
-        >;
+        flags?: Record<string, TokenStateFlagDraft>;
       };
     };
 
     const raw = draft.prototypeToken?.flags?.[moduleId]?.rulesJSON;
-    if (raw === undefined) return;
+    if (raw !== undefined) {
+      try {
+        const rules = validateRulesJSON(raw);
+        if (!draft.prototypeToken?.flags?.[moduleId]) return;
+        draft.prototypeToken.flags[moduleId].rules = rules;
+      } catch (error) {
+        ui.notifications.error(
+          `Invalid rules JSON: ${(error as Error).message}`,
+        );
+      }
+    }
 
-    try {
-      const rules = validateRulesJSON(raw);
-      if (!draft.prototypeToken?.flags?.[moduleId]) return;
-      draft.prototypeToken.flags[moduleId].rules = rules;
-    } catch (error) {
-      ui.notifications.error(`Invalid rules JSON: ${(error as Error).message}`);
+    const configRaw = draft.prototypeToken?.flags?.[moduleId]?.configJSON;
+    if (configRaw !== undefined) {
+      try {
+        const config = validateTokenStateConfigJSON(configRaw);
+        if (!draft.prototypeToken?.flags?.[moduleId]) return;
+        draft.prototypeToken.flags[moduleId].config = config;
+      } catch (error) {
+        ui.notifications.error(
+          `Invalid token state config JSON: ${(error as Error).message}`,
+        );
+      }
     }
   });
 
-  Hooks.on("preUpdateToken", (_doc, changes) => {
+  hooks.on("preUpdateToken", (_doc, changes) => {
+    type TokenStateFlagDraft = {
+      rulesJSON?: unknown;
+      rules?: TokenRule[] | null;
+      configJSON?: unknown;
+      config?: TokenStateUiConfig | null;
+    };
+
     const draft = changes as {
-      flags?: Record<
-        string,
-        { rulesJSON?: unknown; rules?: TokenRule[] | null }
-      >;
+      flags?: Record<string, TokenStateFlagDraft>;
     };
 
     const raw = draft.flags?.[moduleId]?.rulesJSON;
-    if (raw === undefined) return;
+    if (raw !== undefined) {
+      try {
+        const rules = validateRulesJSON(raw);
+        if (!draft.flags?.[moduleId]) return;
+        draft.flags[moduleId].rules = rules;
+      } catch (error) {
+        ui.notifications.error(
+          `Invalid rules JSON: ${(error as Error).message}`,
+        );
+      }
+    }
 
-    try {
-      const rules = validateRulesJSON(raw);
-      if (!draft.flags?.[moduleId]) return;
-      draft.flags[moduleId].rules = rules;
-    } catch (error) {
-      ui.notifications.error(`Invalid rules JSON: ${(error as Error).message}`);
+    const configRaw = draft.flags?.[moduleId]?.configJSON;
+    if (configRaw !== undefined) {
+      try {
+        const config = validateTokenStateConfigJSON(configRaw);
+        if (!draft.flags?.[moduleId]) return;
+        draft.flags[moduleId].config = config;
+      } catch (error) {
+        ui.notifications.error(
+          `Invalid token state config JSON: ${(error as Error).message}`,
+        );
+      }
     }
   });
 
-  Hooks.on("createCombat", handleCombatEvent);
-  Hooks.on("updateCombat", handleCombatEvent);
-  Hooks.on("deleteCombat", handleCombatEvent);
+  hooks.on("createCombat", handleCombatEvent);
+  hooks.on("updateCombat", handleCombatEvent);
+  hooks.on("deleteCombat", handleCombatEvent);
 
-  Hooks.on("createCombatant", handleCombatantEvent);
-  Hooks.on("updateCombatant", handleCombatantEvent);
-  Hooks.on("deleteCombatant", handleCombatantEvent);
+  hooks.on("createCombatant", handleCombatantEvent);
+  hooks.on("updateCombatant", handleCombatantEvent);
+  hooks.on("deleteCombatant", handleCombatantEvent);
 
-  Hooks.on("updateActor", handleActorEvent);
+  hooks.on("updateActor", handleActorEvent);
 
-  Hooks.on("createToken", handleTokenEvent);
+  hooks.on("createToken", handleTokenEvent);
 
-  Hooks.on("canvasReady", handleCanvasEvent);
-  Hooks.on("applyTokenStatusEffect", (token) => {
+  hooks.on("canvasReady", handleCanvasEvent);
+  hooks.on("applyTokenStatusEffect", (token) => {
     const doc = asTokenDocument(token as TokenOrPlaceable);
     if (doc) handleTokenEvent(doc);
   });
+}
+
+export function unregisterTokenChangerHooks(): void {
+  hooks.off();
 }
