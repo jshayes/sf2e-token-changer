@@ -3,13 +3,9 @@
 import "../styles/style.scss";
 
 import {
-  registerTokenChangerHooks as registerTokenChangerHooks2,
-  unregisterTokenChangerHooks as unregisterTokenChangerHooks2,
-} from "./hooks";
-import {
   registerTokenChangerHooks,
   unregisterTokenChangerHooks,
-} from "./tokenChanger";
+} from "./hooks";
 import {
   registerTokenStateConfigEditorHooks,
   unregisterTokenStateConfigEditorHooks,
@@ -17,7 +13,6 @@ import {
 
 function initModule() {
   registerTokenChangerHooks();
-  registerTokenChangerHooks2();
   registerTokenStateConfigEditorHooks();
 }
 
@@ -29,7 +24,6 @@ if (import.meta.hot) {
   import.meta.hot.accept();
   import.meta.hot.dispose(() => {
     unregisterTokenChangerHooks();
-    unregisterTokenChangerHooks2();
     unregisterTokenStateConfigEditorHooks();
   });
 
