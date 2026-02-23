@@ -17,6 +17,22 @@ type ModuleTokenFlags = {
   config?: TokenStateConfig | null;
 };
 
+type Actor = foundry.documents.Actor & {
+  system: {
+    attributes: {
+      hp: {
+        value: number;
+        max: number;
+      };
+    };
+  };
+  conditions: {
+    active: { slug: string }[];
+  };
+};
+
+type TokenDocument = foundry.documents.TokenDocument & { actor: Actor | null };
+
 async function loadModuleTemplates(paths: string[]): Promise<void> {
   const loader = (
     globalThis as { loadTemplates?: (templates: string[]) => Promise<unknown> }
@@ -176,21 +192,6 @@ function playExpectedSounds(
     });
 }
 
-type Actor = foundry.documents.Actor & {
-  system: {
-    attributes: {
-      hp: {
-        value: number;
-        max: number;
-      };
-    };
-  };
-  conditions: {
-    active: { slug: string }[];
-  };
-};
-type TokenDocument = foundry.documents.TokenDocument & { actor: Actor | null };
-
 function getTokenState(token: TokenDocument): TokenState | null {
   if (!token.actor) return null;
   return {
@@ -199,34 +200,6 @@ function getTokenState(token: TokenDocument): TokenState | null {
     conditions: new Set(token.actor.conditions.active.map((x) => x.slug)),
     inCombat: token.inCombat,
   };
-}
-
-function handleActorEvent(actor: Actor, _: any, action: any): void {
-  actor.getActiveTokens().map((token) => {
-    if (!token) return;
-
-    if (token instanceof foundry.canvas.placeables.Token) {
-      token = token.document;
-    }
-
-    const flags = getModuleFlags(token);
-    const current = getTokenState(token as TokenDocument);
-    if (!current) return;
-
-    const previous = clone(current);
-    if (action.damageTaken) {
-      previous.hp += action.damageTaken;
-    }
-
-    playExpectedSounds(flags, current, previous);
-  });
-
-  // const docs = actor
-  //   .getActiveTokens()
-  //   .map((token) => asTokenDocument(token))
-  //   .filter((token): token is TokenDocument => Boolean(token));
-  //
-  // void handleTokenEvents(docs);
 }
 
 const hooks = new HooksManager();
@@ -251,28 +224,56 @@ export function registerTokenSoundHooks(): void {
     );
   });
 
-  hooks.once("ready", () => {
-    if (!game.user.isGM) return;
+  hooks.on("createCombatant", (combatant) => {
+    if (!combatant.token) return;
+    if (combatant.token.scene.id !== canvas.scene?.id) return;
 
-    // game.socket.on(`module.${moduleId}`, async (data: unknown) => {
-    //   if (!isApplyStateSocketPayload(data)) return;
-    //   const scene = game.scenes.get(data.sceneId);
-    //   if (!scene) return;
-    //
-    //   const tokens = data.tokenIds.map((id) => scene.tokens.get(id));
-    //   await handleTokenEvents(tokens);
-    // });
+    const token = combatant.token;
+    const current = getTokenState(token);
+    if (!current) return;
+
+    const previous = clone(current);
+    previous.inCombat = false;
+
+    const flags = getModuleFlags(token);
+    playExpectedSounds(flags, current, previous);
   });
 
-  // hooks.on("createCombat", handleCombatEvent);
-  // hooks.on("updateCombat", handleCombatEvent);
-  // hooks.on("deleteCombat", handleCombatEvent);
-  //
-  // hooks.on("createCombatant", handleCombatantEvent);
-  // hooks.on("updateCombatant", handleCombatantEvent);
-  // hooks.on("deleteCombatant", handleCombatantEvent);
+  hooks.on("deleteCombatant", (combatant) => {
+    if (!combatant.token) return;
+    if (combatant.token.scene.id !== canvas.scene?.id) return;
 
-  hooks.on("updateActor", handleActorEvent);
+    const token = combatant.token;
+    const current = getTokenState(token);
+    if (!current) return;
+
+    const previous = clone(current);
+    previous.inCombat = true;
+
+    const flags = getModuleFlags(token);
+    playExpectedSounds(flags, current, previous);
+  });
+
+  hooks.on("updateActor", (actor: Actor, _: any, action: any) => {
+    actor.getActiveTokens().map((token) => {
+      if (!token) return;
+
+      if (token instanceof foundry.canvas.placeables.Token) {
+        token = token.document;
+      }
+
+      const flags = getModuleFlags(token);
+      const current = getTokenState(token as TokenDocument);
+      if (!current) return;
+
+      const previous = clone(current);
+      if (action.damageTaken) {
+        previous.hp += action.damageTaken;
+      }
+
+      playExpectedSounds(flags, current, previous);
+    });
+  });
 
   hooks.on("applyTokenStatusEffect", (token, status) => {
     token = token.document;
