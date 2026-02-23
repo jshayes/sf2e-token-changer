@@ -2,6 +2,21 @@
   overflow: auto;
 }
 
+.sf2e-token-state-tab {
+  display: grid;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.sf2e-token-state-tab__description {
+  margin: 0;
+}
+
+.sf2e-token-state-tab__actions {
+  display: flex;
+  justify-content: center;
+}
+
 .sf2e-token-state-editor__section {
   margin-bottom: 3rem;
 }

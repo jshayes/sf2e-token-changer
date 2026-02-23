@@ -1,30 +1,15 @@
 <div class="tab scrollable {{tab.cssClass}}" data-tab="sf2e-token-changer" data-group="sheet">
-  <h3>Token States</h3>
+  <div class="sf2e-token-state-tab">
+    <p class="notes sf2e-token-state-tab__description">
+      Configure the default token image, state-based token images, and event-based sound effects.
+      Use the editor to manage conditions, priority order, image settings, and sound triggers.
+    </p>
 
-  <div class="form-group">
-    <label>Structured Config</label>
-    <div class="form-fields">
+    <div class="sf2e-token-state-tab__actions">
       <button type="button" data-action="open-token-state-config-editor">
         <i class="fa-solid fa-sliders"></i>
         Configure Token States
       </button>
     </div>
   </div>
-
-  <p class="notes">
-    Configure default token binding, state-based token images, and transition sound effects.
-    Changes in this editor write directly to the structured <code>config</code> flag.
-  </p>
-
-  <details>
-    <summary>Legacy Rules JSON</summary>
-    <div class="form-group">
-      {{#if source}}
-        <textarea name="flags.sf2e-token-changer.rulesJSON" rows="16" spellcheck="false">{{source.flags.sf2e-token-changer.rulesJSON}}</textarea>
-      {{else}}
-        <textarea name="flags.sf2e-token-changer.rulesJSON" rows="16" spellcheck="false">{{document.flags.sf2e-token-changer.rulesJSON}}</textarea>
-      {{/if}}
-    </div>
-    <p class="notes">Existing rules engine input. Kept for compatibility while the new editor is being built out.</p>
-  </details>
 </div>
