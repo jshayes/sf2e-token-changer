@@ -223,19 +223,19 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
   };
 
   #config: TokenStateConfig;
-  #targetField: HTMLTextAreaElement;
+  #targetToken: foundry.documents.TokenDocument;
   #host: EditorHost;
   #svelteApp: object | null = null;
   #mountedRoot: HTMLElement | null = null;
 
   constructor(options: {
     config: TokenStateConfig;
-    targetField: HTMLTextAreaElement;
+    targetToken: foundry.documents.TokenDocument;
     host: EditorHost;
   }) {
     super({});
     this.#config = deepClone(options.config);
-    this.#targetField = options.targetField;
+    this.#targetToken = options.targetToken;
     this.#host = options.host;
   }
 
@@ -269,19 +269,17 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
       target: mountRoot,
       props: {
         initialConfig: deepClone(this.#config),
-        onApply: (nextConfig: TokenStateConfig) => {
+        onApply: async (nextConfig: TokenStateConfig) => {
           this.#config = deepClone(nextConfig);
-          const json = JSON.stringify(this.#config, null, 2);
-          this.#targetField.value = json;
-          this.#targetField.dispatchEvent(
-            new Event("input", { bubbles: true }),
-          );
-          this.#targetField.dispatchEvent(
-            new Event("change", { bubbles: true }),
-          );
-          ui.notifications.info(
-            "Token state config JSON applied to the token sheet form.",
-          );
+          try {
+            await this.#targetToken.setFlag(moduleId, "config", this.#config);
+            ui.notifications.info("Token state config saved.");
+            void this.close();
+          } catch (error) {
+            ui.notifications.error(
+              `Failed to save token state config: ${(error as Error).message}`,
+            );
+          }
         },
         onClose: () => {
           void this.close();
@@ -339,10 +337,7 @@ function attachTokenSheetEditorButton(
   const button = root.querySelector<HTMLButtonElement>(
     '[data-action="open-token-state-config-editor"]',
   );
-  const field = root.querySelector<HTMLTextAreaElement>(
-    'textarea[data-role="token-state-config-json"]',
-  );
-  if (!button || !field) return;
+  if (!button) return;
   if (button.dataset.boundClick === "true") return;
 
   button.dataset.boundClick = "true";
@@ -350,18 +345,14 @@ function attachTokenSheetEditorButton(
     event.preventDefault();
 
     let config = createDefaultTokenStateConfig(token);
-    try {
-      const parsed = validateTokenStateConfigJSON(field.value);
-      config = parsed ?? config;
-    } catch (error) {
-      ui.notifications.warn(
-        `Invalid structured config JSON. Loading defaults in editor: ${(error as Error).message}`,
-      );
+    const currentConfig = token.getFlag(moduleId, "config");
+    if (currentConfig && typeof currentConfig === "object") {
+      config = normalizeTokenStateConfig(currentConfig);
     }
 
     const editor = new TokenStateConfigEditorApplication({
       config,
-      targetField: field,
+      targetToken: token,
       host: token,
     });
     void editor.render(true);

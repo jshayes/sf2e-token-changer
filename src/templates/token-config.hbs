@@ -13,29 +13,11 @@
 
   <p class="notes">
     Configure default token binding, state-based token images, and transition sound effects.
-    This editor stores a structured JSON config separately from the legacy rules JSON.
+    Changes in this editor write directly to the structured <code>config</code> flag.
   </p>
 
-  <div class="form-group">
-    {{#if source}}
-      <textarea
-        name="flags.sf2e-token-changer.configJSON"
-        rows="8"
-        spellcheck="false"
-        data-role="token-state-config-json"
-      >{{source.flags.sf2e-token-changer.configJSON}}</textarea>
-    {{else}}
-      <textarea
-        name="flags.sf2e-token-changer.configJSON"
-        rows="8"
-        spellcheck="false"
-        data-role="token-state-config-json"
-      >{{document.flags.sf2e-token-changer.configJSON}}</textarea>
-    {{/if}}
-  </div>
-
   <details>
-    <summary>Legacy Rules JSON (current runtime behavior)</summary>
+    <summary>Legacy Rules JSON</summary>
     <div class="form-group">
       {{#if source}}
         <textarea name="flags.sf2e-token-changer.rulesJSON" rows="16" spellcheck="false">{{source.flags.sf2e-token-changer.rulesJSON}}</textarea>
