@@ -28,7 +28,7 @@ async function writeManifest(useDevEntry: boolean): Promise<void> {
   manifest.esmodules = useDevEntry
     ? [`${devServerOrigin}${basePath}ts/module.ts`]
     : ["scripts/module.js"];
-  manifest.styles = [];
+  manifest.styles = ["style.css"];
 
   await writeFile("dist/module.json", `${JSON.stringify(manifest, null, 2)}\n`);
 }
