@@ -7,7 +7,7 @@ import type {
   SoundTriggerRuleConfig,
   TokenStateImageRuleConfig,
   TokenStateConfig,
-  UiCondition,
+  Condition,
 } from "./types";
 
 const tokenStateConfigEditorTemplate = `modules/${moduleId}/templates/token-state-config-editor-shell.hbs`;
@@ -31,9 +31,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function defaultCondition(
-  type: UiCondition["type"] = "hp-percent",
-): UiCondition {
+function defaultCondition(type: Condition["type"] = "hp-percent"): Condition {
   switch (type) {
     case "hp-percent":
       return { type, operator: "<=", value: 0.5 };
@@ -69,8 +67,8 @@ function normalizeNumericOperator(value: unknown): NumericOperator {
   }
 }
 
-function normalizeCondition(raw: unknown): UiCondition {
-  const input = (raw ?? {}) as Partial<UiCondition>;
+function normalizeCondition(raw: unknown): Condition {
+  const input = (raw ?? {}) as Partial<Condition>;
   const type = input.type;
   if (type === "hp-percent") {
     return {

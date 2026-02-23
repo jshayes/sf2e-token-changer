@@ -9,6 +9,7 @@
   export let showValidation = false;
   export let onNameInput: () => void;
   export let onOpenConditions: (index: number) => void;
+  export let onPreviewSound: (index: number) => void;
   export let onOpenSound: (index: number) => void;
   export let onRemove: (index: number) => void;
   export let onDragStart: (event: DragEvent, index: number) => void;
@@ -88,6 +89,14 @@
         value={hasSoundError ? "Sound is required." : row.src}
         class:sf2e-token-state-editor__input-error={hasSoundError}
       />
+      <button
+        type="button"
+        class="sf2e-token-state-editor__icon-button"
+        on:click={() => onPreviewSound(index)}
+        title="Preview sound"
+      >
+        <i class="fa-solid fa-play"></i>
+      </button>
       <button
         type="button"
         class="sf2e-token-state-editor__icon-button"

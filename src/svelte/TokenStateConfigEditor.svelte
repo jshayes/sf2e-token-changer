@@ -187,6 +187,19 @@
     soundConfigModal = null;
   }
 
+  function previewSound(index: number): void {
+    const row = config.sounds[index];
+    if (!row?.src.trim()) {
+      notifyWarn("Sound cannot be empty.");
+      return;
+    }
+
+    foundry.audio.AudioHelper.play(
+      { src: row.src, volume: row.volume, loop: false, autoplay: true },
+      false,
+    );
+  }
+
   function openTokenStateConditionsConfig(index: number): void {
     const row = config.tokenStates[index];
     if (!row) return;
@@ -480,11 +493,12 @@
               {row}
               {index}
               isDropTarget={dropTarget?.list === "sounds" && dropTarget.index === index}
-              showValidation={hasAttemptedSave}
-              onNameInput={updateConfig}
-              onOpenConditions={openSoundConditionsConfig}
-              onOpenSound={openSoundConfig}
-              onRemove={(rowIndex) => removeRow("sounds", rowIndex)}
+            showValidation={hasAttemptedSave}
+            onNameInput={updateConfig}
+            onOpenConditions={openSoundConditionsConfig}
+            onPreviewSound={previewSound}
+            onOpenSound={openSoundConfig}
+            onRemove={(rowIndex) => removeRow("sounds", rowIndex)}
               onDragStart={(event, rowIndex) => startDrag(event, "sounds", rowIndex)}
               onDragEnd={endDrag}
               onDragOver={(event, rowIndex) => dragOver(event, "sounds", rowIndex)}
