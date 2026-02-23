@@ -1,14 +1,9 @@
 import { moduleId } from "../constants";
 import { HooksManager } from "../hooksManager";
 import { getTokenStateConfigEditorTemplatePath } from "../tokenStateConfigEditor";
-import type {
-  Condition,
-  HpPercentCondition,
-  HpValueCondition,
-  InCombatCondition,
-  StatusEffectCondition,
-  TokenStateConfig,
-} from "../types";
+import type { TokenStateConfig, TokenDocument } from "../types";
+import { checkCondition } from "../utils/conditions";
+import { getTokenState, TokenState } from "../utils/tokenState";
 
 const tokenConfigTemplate = `modules/${moduleId}/templates/token-config.hbs`;
 const tokenImageFieldTemplate = `modules/${moduleId}/templates/components/token-image-field.hbs`;
@@ -16,22 +11,6 @@ const tokenImageFieldTemplate = `modules/${moduleId}/templates/components/token-
 type ModuleTokenFlags = {
   config?: TokenStateConfig | null;
 };
-
-type Actor = foundry.documents.Actor & {
-  system: {
-    attributes: {
-      hp: {
-        value: number;
-        max: number;
-      };
-    };
-  };
-  conditions: {
-    active: { slug: string }[];
-  };
-};
-
-type TokenDocument = foundry.documents.TokenDocument & { actor: Actor | null };
 
 async function loadModuleTemplates(paths: string[]): Promise<void> {
   const loader = (
@@ -71,83 +50,6 @@ function getModuleFlags(
     {}) as ModuleTokenFlags;
 }
 
-function checkHpPercentCondition(
-  condition: HpPercentCondition,
-  token: TokenState,
-): boolean {
-  const hpPerc = token.maxHp > 0 ? token.hp / token.maxHp : 0;
-
-  switch (condition.operator) {
-    case "<":
-      return hpPerc < condition.value;
-    case "<=":
-      return hpPerc <= condition.value;
-    case ">":
-      return hpPerc > condition.value;
-    case ">=":
-      return hpPerc >= condition.value;
-    default:
-      return false;
-  }
-}
-
-function checkHpValueCondition(
-  condition: HpValueCondition,
-  token: TokenState,
-): boolean {
-  switch (condition.operator) {
-    case "<":
-      return token.hp < condition.value;
-    case "<=":
-      return token.hp <= condition.value;
-    case ">":
-      return token.hp > condition.value;
-    case ">=":
-      return token.hp >= condition.value;
-    default:
-      return false;
-  }
-}
-
-function checkInCombatCondition(
-  condition: InCombatCondition,
-  token: TokenState,
-): boolean {
-  return token.inCombat === condition.value;
-}
-
-function checkStatusEffectCondition(
-  condition: StatusEffectCondition,
-  token: TokenState,
-): boolean {
-  const matchedConditions = condition.value.filter((status) =>
-    token.conditions.has(status),
-  );
-  switch (condition.operator) {
-    case "any-of":
-      return matchedConditions.length > 0;
-    case "all-of":
-      return matchedConditions.length === condition.value.length;
-    default:
-      return false;
-  }
-}
-
-function checkCondition(condition: Condition, token: TokenState) {
-  switch (condition.type) {
-    case "hp-percent":
-      return checkHpPercentCondition(condition, token);
-    case "hp-value":
-      return checkHpValueCondition(condition, token);
-    case "in-combat":
-      return checkInCombatCondition(condition, token);
-    case "status-effect":
-      return checkStatusEffectCondition(condition, token);
-    default:
-      return false;
-  }
-}
-
 function getExpectedTokenSounds(
   flags: ModuleTokenFlags,
   current: TokenState,
@@ -164,13 +66,6 @@ function getExpectedTokenSounds(
       )
     );
   });
-}
-
-interface TokenState {
-  hp: number;
-  maxHp: number;
-  conditions: Set<string>;
-  inCombat: boolean;
 }
 
 function playExpectedSounds(
@@ -190,16 +85,6 @@ function playExpectedSounds(
     .map((sound) => {
       foundry.audio.AudioHelper.play(sound, false);
     });
-}
-
-function getTokenState(token: TokenDocument): TokenState | null {
-  if (!token.actor) return null;
-  return {
-    hp: token.actor.system.attributes.hp.value,
-    maxHp: token.actor.system.attributes.hp.max,
-    conditions: new Set(token.actor.conditions.active.map((x) => x.slug)),
-    inCombat: token.inCombat,
-  };
 }
 
 const hooks = new HooksManager();

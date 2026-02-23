@@ -54,3 +54,22 @@ export type TokenStateConfig = {
   tokenStates: TokenStateImageRuleConfig[];
   sounds: SoundTriggerRuleConfig[];
 };
+
+export type Actor = foundry.documents.Actor & {
+  system: {
+    attributes: {
+      hp: {
+        value: number;
+        max: number;
+      };
+    };
+  };
+  conditions: {
+    active: { slug: string }[];
+  };
+};
+
+export type TokenDocument = foundry.documents.TokenDocument & {
+  actor: Actor | null;
+  scene: foundry.documents.Scene;
+};

@@ -1,14 +1,9 @@
 import { moduleId } from "../constants";
 import { HooksManager } from "../hooksManager";
 import { getTokenStateConfigEditorTemplatePath } from "../tokenStateConfigEditor";
-import type {
-  Condition,
-  HpPercentCondition,
-  HpValueCondition,
-  InCombatCondition,
-  StatusEffectCondition,
-  TokenStateConfig,
-} from "../types";
+import type { TokenStateConfig, TokenDocument } from "../types";
+import { checkCondition } from "../utils/conditions";
+import { getTokenState } from "../utils/tokenState";
 
 const tokenConfigTemplate = `modules/${moduleId}/templates/token-config.hbs`;
 const tokenImageFieldTemplate = `modules/${moduleId}/templates/components/token-image-field.hbs`;
@@ -23,11 +18,13 @@ type ApplyStateSocketPayload = {
   tokenIds: string[];
 };
 
-type TokenOrPlaceable = TokenDocument | { document: TokenDocument };
+type TokenOrPlaceable =
+  | foundry.documents.TokenDocument
+  | { document: foundry.documents.TokenDocument };
 
 function asTokenDocument(
   token: TokenOrPlaceable | null | undefined,
-): TokenDocument | undefined {
+): foundry.documents.TokenDocument | undefined {
   if (!token) return undefined;
   if ("document" in token) return token.document;
   return token;
@@ -80,136 +77,20 @@ function getModuleFlags(token: TokenDocument): ModuleTokenFlags {
     {}) as ModuleTokenFlags;
 }
 
-function checkHpPercentCondition(
-  condition: HpPercentCondition,
-  token: TokenDocument,
-): boolean {
-  const actor = token.actor as
-    | {
-        system?: {
-          attributes?: {
-            hp?: { value?: number; max?: number };
-          };
-        };
-      }
-    | null
-    | undefined;
-
-  const hp = actor?.system?.attributes?.hp;
-  const value = hp?.value ?? 0;
-  const max = hp?.max ?? 0;
-  const hpPerc = max > 0 ? value / max : 0;
-
-  switch (condition.operator) {
-    case "<":
-      return hpPerc < condition.value;
-    case "<=":
-      return hpPerc <= condition.value;
-    case ">":
-      return hpPerc > condition.value;
-    case ">=":
-      return hpPerc >= condition.value;
-    default:
-      return false;
-  }
-}
-
-function checkHpValueCondition(
-  condition: HpValueCondition,
-  token: TokenDocument,
-): boolean {
-  const actor = token.actor as
-    | {
-        system?: {
-          attributes?: {
-            hp?: { value?: number; max?: number };
-          };
-        };
-      }
-    | null
-    | undefined;
-
-  const hp = actor?.system?.attributes?.hp;
-  const value = hp?.value ?? 0;
-
-  switch (condition.operator) {
-    case "<":
-      return value < condition.value;
-    case "<=":
-      return value <= condition.value;
-    case ">":
-      return value > condition.value;
-    case ">=":
-      return value >= condition.value;
-    default:
-      return false;
-  }
-}
-
-function checkInCombatCondition(
-  condition: InCombatCondition,
-  token: TokenDocument,
-): boolean {
-  return (
-    Boolean((token as TokenDocument & { inCombat?: boolean }).inCombat) ===
-    condition.value
-  );
-}
-
-function checkStatusEffectCondition(
-  condition: StatusEffectCondition,
-  token: TokenDocument,
-): boolean {
-  const actor = token.actor as
-    | {
-        conditions?: {
-          active?: Array<{ slug?: string }>;
-        };
-      }
-    | null
-    | undefined;
-
-  const matchedConditions = (actor?.conditions?.active ?? []).filter((entry) =>
-    condition.value.includes(String(entry.slug ?? "")),
-  );
-
-  switch (condition.operator) {
-    case "any-of":
-      return matchedConditions.length > 0;
-    case "all-of":
-      return matchedConditions.length === condition.value.length;
-    default:
-      return false;
-  }
-}
-
-function checkCondition(condition: Condition, token: TokenDocument) {
-  switch (condition.type) {
-    case "hp-percent":
-      return checkHpPercentCondition(condition, token);
-    case "hp-value":
-      return checkHpValueCondition(condition, token);
-    case "in-combat":
-      return checkInCombatCondition(condition, token);
-    case "status-effect":
-      return checkStatusEffectCondition(condition, token);
-    default:
-      return false;
-  }
-}
-
 function getExpectedTokenImage(token: TokenDocument): {
   image: string;
   scale: number;
 } | null {
   const flags = getModuleFlags(token)?.config;
-
   if (!flags) return null;
+
+  const tokenState = getTokenState(token);
+  if (!tokenState) return null;
 
   return (
     flags.tokenStates.find((state) =>
       state.conditions.reduce(
-        (prev, cur) => prev && checkCondition(cur, token),
+        (prev, cur) => prev && checkCondition(cur, tokenState),
         true,
       ),
     ) ?? flags.default
@@ -229,7 +110,7 @@ function groupTokensByScene(tokens: TokenDocument[]) {
 }
 
 async function handleTokenEvents(
-  tokens: Array<TokenDocument | null | undefined>,
+  tokens: Array<foundry.documents.TokenDocument | null | undefined>,
 ): Promise<void> {
   const cleanTokens = tokens.filter((token): token is TokenDocument =>
     Boolean(token),
@@ -294,7 +175,7 @@ async function handleTokenEvents(
   }
 }
 
-function handleTokenEvent(token: TokenDocument): void {
+function handleTokenEvent(token: foundry.documents.TokenDocument): void {
   void handleTokenEvents([token]);
 }
 
