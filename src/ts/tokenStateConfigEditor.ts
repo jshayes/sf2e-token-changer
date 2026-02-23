@@ -195,6 +195,7 @@ function getDefaultImage(token: foundry.documents.TokenDocument): {
   image: string;
   scale: number;
 } {
+  console.log(token, token.ring);
   if (token.ring.enabled) {
     return {
       image: token.ring.subject.texture ?? token.texture.src ?? "",
@@ -366,7 +367,7 @@ export function registerTokenStateConfigEditorHooks(): void {
   });
 
   hooks.on("renderPrototypeTokenConfig", (app, html) => {
-    attachTokenSheetEditorButton(app.document, html);
+    attachTokenSheetEditorButton(app.token, html);
   });
 }
 
