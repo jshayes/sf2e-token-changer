@@ -3,8 +3,8 @@ import { HooksManager } from "./hooksManager";
 import {
   getTokenStateConfigEditorTemplatePath,
   validateTokenStateConfigJSON,
-  type TokenStateUiConfig,
 } from "./tokenStateConfigEditor";
+import { TokenStateConfig } from "./types";
 
 const tokenConfigTemplate = `modules/${moduleId}/templates/token-config.hbs`;
 const tokenImageFieldTemplate = `modules/${moduleId}/templates/components/token-image-field.hbs`;
@@ -53,7 +53,7 @@ type TokenRule = {
 type ModuleTokenFlags = {
   rules?: TokenRule[];
   rulesJSON?: string;
-  config?: TokenStateUiConfig | null;
+  config?: TokenStateConfig | null;
   configJSON?: string;
   _defaults?: {
     ring?: unknown;
@@ -460,7 +460,7 @@ export function registerTokenChangerHooks(): void {
       rulesJSON?: unknown;
       rules?: TokenRule[] | null;
       configJSON?: unknown;
-      config?: TokenStateUiConfig | null;
+      config?: TokenStateConfig | null;
     };
 
     const draft = changes as {
@@ -501,7 +501,7 @@ export function registerTokenChangerHooks(): void {
       rulesJSON?: unknown;
       rules?: TokenRule[] | null;
       configJSON?: unknown;
-      config?: TokenStateUiConfig | null;
+      config?: TokenStateConfig | null;
     };
 
     const draft = changes as {

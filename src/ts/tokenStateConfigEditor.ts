@@ -2,44 +2,15 @@ import { mount, unmount } from "svelte";
 import TokenStateConfigEditor from "../svelte/TokenStateConfigEditor.svelte";
 import { moduleId } from "./constants";
 import { HooksManager } from "./hooksManager";
+import type {
+  NumericOperator,
+  SoundTriggerRuleConfig,
+  TokenStateImageRuleConfig,
+  TokenStateConfig,
+  UiCondition,
+} from "./types";
 
 const tokenStateConfigEditorTemplate = `modules/${moduleId}/templates/token-state-config-editor-shell.hbs`;
-
-type NumericOperator = "<" | "<=" | ">" | ">=";
-type StatusOperator = "any-of" | "all-of";
-
-type UiCondition =
-  | { type: "hp-percent"; operator: NumericOperator; value: number }
-  | { type: "hp-value"; operator: NumericOperator; value: number }
-  | { type: "in-combat"; value: boolean }
-  | { type: "status-effect"; operator: StatusOperator; value: string[] };
-
-export type TokenStateImageRuleConfig = {
-  id: string;
-  name: string;
-  conditions: UiCondition[];
-  image: string;
-  scale: number;
-};
-
-export type SoundTriggerRuleConfig = {
-  id: string;
-  name: string;
-  trigger: UiCondition;
-  conditions: UiCondition[];
-  src: string;
-  volume: number;
-};
-
-export type TokenStateUiConfig = {
-  version: 1;
-  default: {
-    image: string;
-    scale: number;
-  };
-  tokenStates: TokenStateImageRuleConfig[];
-  sounds: SoundTriggerRuleConfig[];
-};
 
 type EditorHost = {
   id?: string;
@@ -75,9 +46,9 @@ function defaultCondition(
   }
 }
 
-export function createDefaultTokenStateUiConfig(
+export function createDefaultTokenStateConfig(
   token: foundry.documents.TokenDocument,
-): TokenStateUiConfig {
+): TokenStateConfig {
   return {
     version: 1,
     default: getDefaultImage(token),
@@ -181,8 +152,8 @@ function normalizeSoundRule(raw: unknown): SoundTriggerRuleConfig {
   };
 }
 
-export function normalizeTokenStateUiConfig(raw: unknown): TokenStateUiConfig {
-  const input = (raw ?? {}) as Partial<TokenStateUiConfig>;
+export function normalizeTokenStateConfig(raw: unknown): TokenStateConfig {
+  const input = (raw ?? {}) as Partial<TokenStateConfig>;
   return {
     version: 1,
     default: {
@@ -201,14 +172,14 @@ export function normalizeTokenStateUiConfig(raw: unknown): TokenStateUiConfig {
 
 export function validateTokenStateConfigJSON(
   json: unknown,
-): TokenStateUiConfig | null | undefined {
+): TokenStateConfig | null | undefined {
   if (json === undefined) return undefined;
   if (json === "") return null;
   const parsed = JSON.parse(String(json));
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new Error("Config must be an object");
   }
-  return normalizeTokenStateUiConfig(parsed);
+  return normalizeTokenStateConfig(parsed);
 }
 
 function getTokenConfigRootElement(html: unknown): HTMLElement | null {
@@ -253,14 +224,14 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
     },
   };
 
-  #config: TokenStateUiConfig;
+  #config: TokenStateConfig;
   #targetField: HTMLTextAreaElement;
   #host: EditorHost;
   #svelteApp: object | null = null;
   #mountedRoot: HTMLElement | null = null;
 
   constructor(options: {
-    config: TokenStateUiConfig;
+    config: TokenStateConfig;
     targetField: HTMLTextAreaElement;
     host: EditorHost;
   }) {
@@ -300,7 +271,7 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
       target: mountRoot,
       props: {
         initialConfig: deepClone(this.#config),
-        onApply: (nextConfig: TokenStateUiConfig) => {
+        onApply: (nextConfig: TokenStateConfig) => {
           this.#config = deepClone(nextConfig);
           const json = JSON.stringify(this.#config, null, 2);
           this.#targetField.value = json;
@@ -380,7 +351,7 @@ function attachTokenSheetEditorButton(
   button.addEventListener("click", (event) => {
     event.preventDefault();
 
-    let config = createDefaultTokenStateUiConfig(token);
+    let config = createDefaultTokenStateConfig(token);
     try {
       const parsed = validateTokenStateConfigJSON(field.value);
       config = parsed ?? config;
