@@ -1,4 +1,6 @@
+import { ActorPF2e } from "foundry-pf2e";
 import { Module } from "foundry-pf2e/foundry/client/packages/_module.mjs";
+import { PrototypeToken } from "foundry-pf2e/foundry/common/data/data.mjs";
 
 export interface MyModule extends Module {}
 
@@ -73,3 +75,7 @@ export type TokenDocument = foundry.documents.TokenDocument & {
   actor: Actor | null;
   scene: foundry.documents.Scene;
 };
+
+export type TokenOrPrototype =
+  | foundry.documents.TokenDocument
+  | PrototypeToken<ActorPF2e>;

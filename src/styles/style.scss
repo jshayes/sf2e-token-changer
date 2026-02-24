@@ -14,9 +14,47 @@
 
 .sf2e-token-state-tab__actions {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.sf2e-token-state-tab__sync-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sf2e-token-state-tab__sync-actions button {
+  flex: 1;
+}
+
+.sf2e-token-state-sync-dialog__option {
+  margin: 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sf2e-token-state-sync-dialog {
+  max-width: 24rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sf2e-token-state-sync-dialog__option p {
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.sf2e-token-state-sync-dialog__option .notes {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .sf2e-token-state-editor__section {

@@ -4,17 +4,21 @@ import { mount, unmount } from "svelte";
 import TokenStateConfigEditor from "../svelte/TokenStateConfigEditor.svelte";
 import { moduleId } from "./constants";
 import { HooksManager } from "./hooksManager";
+import {
+  openPrototypeTokenSyncDialog,
+  removePrototypeTokenConfig,
+  removeTokenConfig,
+  syncFromPrototype,
+  syncToPrototype,
+} from "./tokenStateSync";
 import type {
   Condition,
   NumericOperator,
   SoundTriggerRuleConfig,
+  TokenOrPrototype,
   TokenStateConfig,
   TokenStateImageRuleConfig,
 } from "./types";
-
-type TokenOrPrototype =
-  | foundry.documents.TokenDocument
-  | PrototypeToken<ActorPF2e>;
 
 const tokenStateConfigEditorTemplate = `modules/${moduleId}/templates/token-state-config-editor-shell.hbs`;
 
@@ -335,39 +339,38 @@ function attachTokenSheetEditorButton(
   });
 }
 
-function syncToPrototype(token: foundry.documents.TokenDocument) {
-  const prototype = token.actor?.prototypeToken;
-  if (!prototype) return;
-
-  const tokenConfig = token.getFlag(moduleId, "config");
-  prototype.unsetFlag(moduleId, "config");
-  prototype.setFlag(moduleId, "config", foundry.utils.deepClone(tokenConfig));
-}
-
-function syncFromPrototype(token: foundry.documents.TokenDocument) {
-  const prototype = token.actor?.prototypeToken;
-  if (!prototype) return;
-
-  const prototypeConfig = prototype.getFlag(moduleId, "config");
-  token.unsetFlag(moduleId, "config");
-  token.setFlag(moduleId, "config", foundry.utils.deepClone(prototypeConfig));
-}
-
 function attachTokenPrototypeButtons(
   token: PrototypeToken<ActorPF2e>,
   html: HTMLElement,
 ) {
   attachTokenSheetEditorButton(token, html);
 
-  const button = html.querySelector<HTMLButtonElement>(
+  // Sync to tokens
+  let button = html.querySelector<HTMLButtonElement>(
     '.sf2e-token-state-tab__sync-actions [data-action="sync-to-tokens"]',
   );
   if (!button) return;
   if (button.dataset.boundClick === "true") return;
 
   button.dataset.boundClick = "true";
+  button.hidden = false;
   button.addEventListener("click", (event) => {
     event.preventDefault();
+    void openPrototypeTokenSyncDialog(token);
+  });
+
+  // Remove token config
+  button = html.querySelector<HTMLButtonElement>(
+    '.sf2e-token-state-tab__sync-actions [data-action="remove-config"]',
+  );
+  if (!button) return;
+  if (button.dataset.boundClick === "true") return;
+
+  button.dataset.boundClick = "true";
+  button.hidden = false;
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    removePrototypeTokenConfig(token);
   });
 }
 
@@ -385,9 +388,10 @@ function attachTokenButtons(
   if (button.dataset.boundClick === "true") return;
 
   button.dataset.boundClick = "true";
-  button.addEventListener("click", (event) => {
+  button.hidden = false;
+  button.addEventListener("click", async (event) => {
     event.preventDefault();
-    syncToPrototype(token);
+    await syncToPrototype(token);
   });
 
   // Sync from prototype
@@ -398,9 +402,24 @@ function attachTokenButtons(
   if (button.dataset.boundClick === "true") return;
 
   button.dataset.boundClick = "true";
+  button.hidden = false;
+  button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    await syncFromPrototype(token);
+  });
+
+  // Remove token config
+  button = html.querySelector<HTMLButtonElement>(
+    '.sf2e-token-state-tab__sync-actions [data-action="remove-config"]',
+  );
+  if (!button) return;
+  if (button.dataset.boundClick === "true") return;
+
+  button.dataset.boundClick = "true";
+  button.hidden = false;
   button.addEventListener("click", (event) => {
     event.preventDefault();
-    syncFromPrototype(token);
+    removeTokenConfig(token);
   });
 }
 
