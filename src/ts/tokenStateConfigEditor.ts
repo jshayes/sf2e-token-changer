@@ -195,7 +195,6 @@ function getDefaultImage(token: foundry.documents.TokenDocument): {
   image: string;
   scale: number;
 } {
-  console.log(token, token.ring);
   if (token.ring.enabled) {
     return {
       image: token.ring.subject.texture ?? token.texture.src ?? "",
