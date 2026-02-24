@@ -3,7 +3,6 @@ import { HooksManager } from "../hooksManager";
 import { getTokenStateConfigEditorTemplatePath } from "../tokenStateConfigEditor";
 
 const tokenConfigTemplate = `modules/${moduleId}/templates/token-config.hbs`;
-const tokenImageFieldTemplate = `modules/${moduleId}/templates/components/token-image-field.hbs`;
 
 async function loadModuleTemplates(paths: string[]): Promise<void> {
   await foundry.applications.handlebars.loadTemplates(paths);
@@ -35,10 +34,7 @@ function addTokenStatesTab(sheetClass: {
 const hooks = new HooksManager();
 export function registerTokenConfigHooks(): void {
   hooks.on("ready", async () => {
-    await loadModuleTemplates([
-      tokenImageFieldTemplate,
-      getTokenStateConfigEditorTemplatePath(),
-    ]);
+    await loadModuleTemplates([getTokenStateConfigEditorTemplatePath()]);
 
     addTokenStatesTab(
       foundry.applications.sheets.TokenConfig as unknown as {
