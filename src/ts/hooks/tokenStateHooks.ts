@@ -1,12 +1,8 @@
 import { moduleId } from "../constants";
 import { HooksManager } from "../hooksManager";
-import { getTokenStateConfigEditorTemplatePath } from "../tokenStateConfigEditor";
-import type { TokenStateConfig, TokenDocument } from "../types";
+import type { TokenDocument, TokenStateConfig } from "../types";
 import { checkCondition } from "../utils/conditions";
 import { getTokenState } from "../utils/tokenState";
-
-const tokenConfigTemplate = `modules/${moduleId}/templates/token-config.hbs`;
-const tokenImageFieldTemplate = `modules/${moduleId}/templates/components/token-image-field.hbs`;
 
 type ModuleTokenFlags = {
   config?: TokenStateConfig | null;
@@ -39,37 +35,6 @@ function isApplyStateSocketPayload(
     typeof payload.sceneId === "string" &&
     Array.isArray(payload.tokenIds)
   );
-}
-
-async function loadModuleTemplates(paths: string[]): Promise<void> {
-  const loader = (
-    globalThis as { loadTemplates?: (templates: string[]) => Promise<unknown> }
-  ).loadTemplates;
-  if (!loader) return;
-  await loader(paths);
-}
-
-function addTokenStatesTab(sheetClass: {
-  TABS?: { sheet?: { tabs?: Array<Record<string, unknown>> } };
-  PARTS?: Record<string, unknown>;
-}): void {
-  sheetClass.TABS?.sheet?.tabs?.push({
-    id: moduleId,
-    label: "Token States",
-    icon: "fa-solid fa-grid",
-  });
-
-  if (!sheetClass.PARTS) return;
-
-  const footer = sheetClass.PARTS.footer;
-  delete sheetClass.PARTS.footer;
-
-  sheetClass.PARTS[moduleId] = {
-    template: tokenConfigTemplate,
-    scrollable: [""],
-  };
-
-  sheetClass.PARTS.footer = footer;
 }
 
 function getModuleFlags(token: TokenDocument): ModuleTokenFlags {
@@ -220,28 +185,6 @@ function handleCanvasEvent(currentCanvas: {
 
 const hooks = new HooksManager();
 export function registerTokenStateHooks(): void {
-  hooks.on("ready", async () => {
-    if (!game.user.isGM) return;
-
-    await loadModuleTemplates([
-      tokenImageFieldTemplate,
-      getTokenStateConfigEditorTemplatePath(),
-    ]);
-
-    addTokenStatesTab(
-      foundry.applications.sheets.TokenConfig as unknown as {
-        TABS?: { sheet?: { tabs?: Array<Record<string, unknown>> } };
-        PARTS?: Record<string, unknown>;
-      },
-    );
-    addTokenStatesTab(
-      foundry.applications.sheets.PrototypeTokenConfig as unknown as {
-        TABS?: { sheet?: { tabs?: Array<Record<string, unknown>> } };
-        PARTS?: Record<string, unknown>;
-      },
-    );
-  });
-
   hooks.once("ready", () => {
     if (!game.user.isGM) return;
 

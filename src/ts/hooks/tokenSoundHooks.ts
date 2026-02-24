@@ -1,47 +1,12 @@
 import { moduleId } from "../constants";
 import { HooksManager } from "../hooksManager";
-import { getTokenStateConfigEditorTemplatePath } from "../tokenStateConfigEditor";
-import type { TokenStateConfig, TokenDocument } from "../types";
+import type { TokenDocument, TokenStateConfig } from "../types";
 import { checkCondition } from "../utils/conditions";
 import { getTokenState, TokenState } from "../utils/tokenState";
-
-const tokenConfigTemplate = `modules/${moduleId}/templates/token-config.hbs`;
-const tokenImageFieldTemplate = `modules/${moduleId}/templates/components/token-image-field.hbs`;
 
 type ModuleTokenFlags = {
   config?: TokenStateConfig | null;
 };
-
-async function loadModuleTemplates(paths: string[]): Promise<void> {
-  const loader = (
-    globalThis as { loadTemplates?: (templates: string[]) => Promise<unknown> }
-  ).loadTemplates;
-  if (!loader) return;
-  await loader(paths);
-}
-
-function addTokenStatesTab(sheetClass: {
-  TABS?: { sheet?: { tabs?: Array<Record<string, unknown>> } };
-  PARTS?: Record<string, unknown>;
-}): void {
-  sheetClass.TABS?.sheet?.tabs?.push({
-    id: moduleId,
-    label: "Token States",
-    icon: "fa-solid fa-grid",
-  });
-
-  if (!sheetClass.PARTS) return;
-
-  const footer = sheetClass.PARTS.footer;
-  delete sheetClass.PARTS.footer;
-
-  sheetClass.PARTS[moduleId] = {
-    template: tokenConfigTemplate,
-    scrollable: [""],
-  };
-
-  sheetClass.PARTS.footer = footer;
-}
 
 function getModuleFlags(
   token: foundry.documents.TokenDocument,
@@ -89,26 +54,6 @@ function playExpectedSounds(
 
 const hooks = new HooksManager();
 export function registerTokenSoundHooks(): void {
-  hooks.on("ready", async () => {
-    await loadModuleTemplates([
-      tokenImageFieldTemplate,
-      getTokenStateConfigEditorTemplatePath(),
-    ]);
-
-    addTokenStatesTab(
-      foundry.applications.sheets.TokenConfig as unknown as {
-        TABS?: { sheet?: { tabs?: Array<Record<string, unknown>> } };
-        PARTS?: Record<string, unknown>;
-      },
-    );
-    addTokenStatesTab(
-      foundry.applications.sheets.PrototypeTokenConfig as unknown as {
-        TABS?: { sheet?: { tabs?: Array<Record<string, unknown>> } };
-        PARTS?: Record<string, unknown>;
-      },
-    );
-  });
-
   hooks.on("createCombatant", (combatant) => {
     if (!combatant.token) return;
     if (combatant.token.scene.id !== canvas.scene?.id) return;
