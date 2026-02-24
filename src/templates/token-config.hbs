@@ -1,8 +1,13 @@
-<div class="tab scrollable {{tab.cssClass}}" data-tab="sf2e-token-changer" data-group="sheet">
+<div
+  class="tab scrollable {{tab.cssClass}}"
+  data-tab="sf2e-token-changer"
+  data-group="sheet"
+>
   <div class="sf2e-token-state-tab">
     <p class="notes sf2e-token-state-tab__description">
-      Configure the default token image, state-based token images, and event-based sound effects.
-      Use the editor to manage conditions, priority order, image settings, and sound triggers.
+      Configure the default token image, state-based token images, and
+      event-based sound effects. Use the editor to manage conditions, priority
+      order, image settings, and sound triggers.
     </p>
 
     <div class="sf2e-token-state-tab__actions">
@@ -10,6 +15,21 @@
         <i class="fa-solid fa-sliders"></i>
         Configure Token States
       </button>
+
+      <div class="sf2e-token-state-tab__sync-actions">
+        <button type="button" data-action="sync-to-prototype" hidden>
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          Sync to prototype
+        </button>
+        <button type="button" data-action="sync-from-prototype" hidden>
+          <i class="fa-solid fa-arrow-down"></i>
+          Sync from prototype
+        </button>
+        <button type="button" data-action="sync-to-tokens" hidden>
+          <i class="fa-solid fa-copy"></i>
+          Sync to tokens
+        </button>
+      </div>
     </div>
   </div>
 </div>

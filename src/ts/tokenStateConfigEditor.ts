@@ -1,22 +1,22 @@
+import { ActorPF2e } from "foundry-pf2e";
+import { PrototypeToken } from "foundry-pf2e/foundry/common/data/data.mjs";
 import { mount, unmount } from "svelte";
 import TokenStateConfigEditor from "../svelte/TokenStateConfigEditor.svelte";
 import { moduleId } from "./constants";
 import { HooksManager } from "./hooksManager";
 import type {
+  Condition,
   NumericOperator,
   SoundTriggerRuleConfig,
-  TokenStateImageRuleConfig,
   TokenStateConfig,
-  Condition,
+  TokenStateImageRuleConfig,
 } from "./types";
 
-const tokenStateConfigEditorTemplate = `modules/${moduleId}/templates/token-state-config-editor-shell.hbs`;
+type TokenOrPrototype =
+  | foundry.documents.TokenDocument
+  | PrototypeToken<ActorPF2e>;
 
-type EditorHost = {
-  id?: string;
-  title?: string;
-  object?: unknown;
-};
+const tokenStateConfigEditorTemplate = `modules/${moduleId}/templates/token-state-config-editor-shell.hbs`;
 
 function randomId(): string {
   const utils = (
@@ -45,7 +45,7 @@ function defaultCondition(type: Condition["type"] = "hp-percent"): Condition {
 }
 
 export function createDefaultTokenStateConfig(
-  token: foundry.documents.TokenDocument,
+  token: TokenOrPrototype,
 ): TokenStateConfig {
   return {
     version: 1,
@@ -168,30 +168,11 @@ export function normalizeTokenStateConfig(raw: unknown): TokenStateConfig {
   };
 }
 
-export function validateTokenStateConfigJSON(
-  json: unknown,
-): TokenStateConfig | null | undefined {
-  if (json === undefined) return undefined;
-  if (json === "") return null;
-  const parsed = JSON.parse(String(json));
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("Config must be an object");
-  }
-  return normalizeTokenStateConfig(parsed);
-}
-
-function getTokenConfigRootElement(html: unknown): HTMLElement | null {
-  if (html instanceof HTMLElement) return html;
-  const candidate = html as { 0?: unknown; length?: number };
-  if (candidate?.[0] instanceof HTMLElement) return candidate[0];
-  return null;
-}
-
 function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function getDefaultImage(token: foundry.documents.TokenDocument): {
+function getDefaultImage(token: TokenOrPrototype): {
   image: string;
   scale: number;
 } {
@@ -223,24 +204,23 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
   };
 
   #config: TokenStateConfig;
-  #targetToken: foundry.documents.TokenDocument;
-  #host: EditorHost;
+  #targetToken: TokenOrPrototype;
   #svelteApp: object | null = null;
   #mountedRoot: HTMLElement | null = null;
 
   constructor(options: {
     config: TokenStateConfig;
-    targetToken: foundry.documents.TokenDocument;
-    host: EditorHost;
+    targetToken: TokenOrPrototype;
   }) {
     super({});
     this.#config = deepClone(options.config);
     this.#targetToken = options.targetToken;
-    this.#host = options.host;
   }
 
   override get title(): string {
-    const hostTitle = this.#host.title ? `: ${this.#host.title}` : "";
+    const hostTitle = this.#targetToken.name
+      ? `: ${this.#targetToken.name}`
+      : "";
     return `Token State Config${hostTitle}`;
   }
 
@@ -328,13 +308,10 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
 }
 
 function attachTokenSheetEditorButton(
-  token: foundry.documents.TokenDocument,
-  html: unknown,
+  token: foundry.documents.TokenDocument | PrototypeToken<ActorPF2e>,
+  html: HTMLElement,
 ): void {
-  const root = getTokenConfigRootElement(html);
-  if (!root) return;
-
-  const button = root.querySelector<HTMLButtonElement>(
+  const button = html.querySelector<HTMLButtonElement>(
     '[data-action="open-token-state-config-editor"]',
   );
   if (!button) return;
@@ -353,20 +330,88 @@ function attachTokenSheetEditorButton(
     const editor = new TokenStateConfigEditorApplication({
       config,
       targetToken: token,
-      host: token,
     });
     void editor.render(true);
+  });
+}
+
+function syncToPrototype(token: foundry.documents.TokenDocument) {
+  const prototype = token.actor?.prototypeToken;
+  if (!prototype) return;
+
+  const tokenConfig = token.getFlag(moduleId, "config");
+  prototype.unsetFlag(moduleId, "config");
+  prototype.setFlag(moduleId, "config", foundry.utils.deepClone(tokenConfig));
+}
+
+function syncFromPrototype(token: foundry.documents.TokenDocument) {
+  const prototype = token.actor?.prototypeToken;
+  if (!prototype) return;
+
+  const prototypeConfig = prototype.getFlag(moduleId, "config");
+  token.unsetFlag(moduleId, "config");
+  token.setFlag(moduleId, "config", foundry.utils.deepClone(prototypeConfig));
+}
+
+function attachTokenPrototypeButtons(
+  token: PrototypeToken<ActorPF2e>,
+  html: HTMLElement,
+) {
+  attachTokenSheetEditorButton(token, html);
+
+  const button = html.querySelector<HTMLButtonElement>(
+    '.sf2e-token-state-tab__sync-actions [data-action="sync-to-tokens"]',
+  );
+  if (!button) return;
+  if (button.dataset.boundClick === "true") return;
+
+  button.dataset.boundClick = "true";
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+  });
+}
+
+function attachTokenButtons(
+  token: foundry.documents.TokenDocument,
+  html: HTMLElement,
+) {
+  attachTokenSheetEditorButton(token, html);
+
+  // Sync to prototype
+  let button = html.querySelector<HTMLButtonElement>(
+    '.sf2e-token-state-tab__sync-actions [data-action="sync-to-prototype"]',
+  );
+  if (!button) return;
+  if (button.dataset.boundClick === "true") return;
+
+  button.dataset.boundClick = "true";
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    syncToPrototype(token);
+  });
+
+  // Sync from prototype
+  button = html.querySelector<HTMLButtonElement>(
+    '.sf2e-token-state-tab__sync-actions [data-action="sync-from-prototype"]',
+  );
+  if (!button) return;
+  if (button.dataset.boundClick === "true") return;
+
+  button.dataset.boundClick = "true";
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    syncFromPrototype(token);
   });
 }
 
 const hooks = new HooksManager();
 export function registerTokenStateConfigEditorHooks(): void {
   hooks.on("renderTokenConfig", (app, html) => {
-    attachTokenSheetEditorButton(app.document, html);
+    attachTokenButtons(app.document, html);
   });
 
   hooks.on("renderPrototypeTokenConfig", (app, html) => {
-    attachTokenSheetEditorButton(app.token, html);
+    attachTokenPrototypeButtons(app.token, html);
   });
 }
 
