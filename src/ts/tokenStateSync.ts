@@ -30,9 +30,7 @@ async function removeConfig(message: string, token: TokenOrPrototype) {
 
   ui.notifications.info("Successfully removed the config");
 }
-export async function removeTokenConfig(
-  token: foundry.documents.TokenDocument,
-) {
+export async function removeTokenConfig(token: TokenDocumentPF2e) {
   return removeConfig(
     "Are you sure? This will remove this token's config",
     token,

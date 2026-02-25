@@ -1,6 +1,7 @@
+import { ActorPF2e, CombatantPF2e, TokenPF2e } from "foundry-pf2e";
 import { moduleId } from "../constants";
 import { HooksManager } from "../hooksManager";
-import type { TokenDocument, TokenStateConfig } from "../types";
+import type { TokenStateConfig } from "../types";
 import { checkCondition } from "../utils/conditions";
 import { getTokenState, TokenState } from "../utils/tokenState";
 
@@ -54,9 +55,9 @@ function playExpectedSounds(
 
 const hooks = new HooksManager();
 export function registerTokenSoundHooks(): void {
-  hooks.on("createCombatant", (combatant) => {
+  hooks.on("createCombatant", (combatant: CombatantPF2e) => {
     if (!combatant.token) return;
-    if (combatant.token.scene.id !== canvas.scene?.id) return;
+    if (combatant.token.scene?.id !== canvas.scene?.id) return;
 
     const token = combatant.token;
     const current = getTokenState(token);
@@ -69,9 +70,9 @@ export function registerTokenSoundHooks(): void {
     playExpectedSounds(flags, current, previous);
   });
 
-  hooks.on("deleteCombatant", (combatant) => {
+  hooks.on("deleteCombatant", (combatant: CombatantPF2e) => {
     if (!combatant.token) return;
-    if (combatant.token.scene.id !== canvas.scene?.id) return;
+    if (combatant.token.scene?.id !== canvas.scene?.id) return;
 
     const token = combatant.token;
     const current = getTokenState(token);
@@ -84,16 +85,10 @@ export function registerTokenSoundHooks(): void {
     playExpectedSounds(flags, current, previous);
   });
 
-  hooks.on("updateActor", (actor: Actor, _: any, action: any) => {
+  hooks.on("updateActor", (actor: ActorPF2e, _: any, action: any) => {
     actor.getActiveTokens().map((token) => {
-      if (!token) return;
-
-      if (token instanceof foundry.canvas.placeables.Token) {
-        token = token.document;
-      }
-
-      const flags = getModuleFlags(token);
-      const current = getTokenState(token as TokenDocument);
+      const flags = getModuleFlags(token.document);
+      const current = getTokenState(token.document);
       if (!current) return;
 
       const previous = clone(current);
@@ -105,11 +100,9 @@ export function registerTokenSoundHooks(): void {
     });
   });
 
-  hooks.on("applyTokenStatusEffect", (token, status) => {
-    token = token.document;
-
-    const flags = getModuleFlags(token);
-    const current = getTokenState(token);
+  hooks.on("applyTokenStatusEffect", (token: TokenPF2e, status: string) => {
+    const flags = getModuleFlags(token.document);
+    const current = getTokenState(token.document);
     if (!current) return;
 
     const previous = clone(current);

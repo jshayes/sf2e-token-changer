@@ -1,4 +1,4 @@
-import { ActorPF2e } from "foundry-pf2e";
+import { ActorPF2e, TokenDocumentPF2e } from "foundry-pf2e";
 import { PrototypeToken } from "foundry-pf2e/foundry/common/data/data.mjs";
 import { mount, unmount } from "svelte";
 import TokenStateConfigEditor from "../svelte/TokenStateConfigEditor.svelte";
@@ -312,7 +312,7 @@ class TokenStateConfigEditorApplication extends foundry.applications.api.Handleb
 }
 
 function attachTokenSheetEditorButton(
-  token: foundry.documents.TokenDocument | PrototypeToken<ActorPF2e>,
+  token: TokenDocumentPF2e | PrototypeToken<ActorPF2e>,
   html: HTMLElement,
 ): void {
   const button = html.querySelector<HTMLButtonElement>(
@@ -374,10 +374,7 @@ function attachTokenPrototypeButtons(
   });
 }
 
-function attachTokenButtons(
-  token: foundry.documents.TokenDocument,
-  html: HTMLElement,
-) {
+function attachTokenButtons(token: TokenDocumentPF2e, html: HTMLElement) {
   attachTokenSheetEditorButton(token, html);
 
   // Sync to prototype

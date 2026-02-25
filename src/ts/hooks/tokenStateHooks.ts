@@ -1,8 +1,17 @@
+import {
+  ActorPF2e,
+  CanvasPF2e,
+  CombatantPF2e,
+  EncounterPF2e,
+  TokenDocumentPF2e,
+  TokenPF2e,
+} from "foundry-pf2e";
 import { moduleId } from "../constants";
 import { HooksManager } from "../hooksManager";
-import type { TokenDocument, TokenStateConfig } from "../types";
+import type { TokenStateConfig } from "../types";
 import { checkCondition } from "../utils/conditions";
 import { getTokenState } from "../utils/tokenState";
+import { isDefined } from "../utils/isDefined";
 
 type ModuleTokenFlags = {
   config?: TokenStateConfig | null;
@@ -13,18 +22,6 @@ type ApplyStateSocketPayload = {
   sceneId: string;
   tokenIds: string[];
 };
-
-type TokenOrPlaceable =
-  | foundry.documents.TokenDocument
-  | { document: foundry.documents.TokenDocument };
-
-function asTokenDocument(
-  token: TokenOrPlaceable | null | undefined,
-): foundry.documents.TokenDocument | undefined {
-  if (!token) return undefined;
-  if ("document" in token) return token.document;
-  return token;
-}
 
 function isApplyStateSocketPayload(
   value: unknown,
@@ -37,12 +34,12 @@ function isApplyStateSocketPayload(
   );
 }
 
-function getModuleFlags(token: TokenDocument): ModuleTokenFlags {
+function getModuleFlags(token: TokenDocumentPF2e): ModuleTokenFlags {
   return ((token.flags as Record<string, unknown>)[moduleId] ??
     {}) as ModuleTokenFlags;
 }
 
-function getExpectedTokenImage(token: TokenDocument): {
+function getExpectedTokenImage(token: TokenDocumentPF2e): {
   image: string;
   scale: number;
 } | null {
@@ -62,10 +59,12 @@ function getExpectedTokenImage(token: TokenDocument): {
   );
 }
 
-function groupTokensByScene(tokens: TokenDocument[]) {
-  const grouped: { [key: string]: TokenDocument[] } = {};
+function groupTokensByScene(tokens: TokenDocumentPF2e[]) {
+  const grouped: { [key: string]: TokenDocumentPF2e[] } = {};
 
   tokens.forEach((token) => {
+    if (!token.scene) return;
+
     const arr = grouped[token.scene.id] ?? [];
     arr.push(token);
     grouped[token.scene.id] = arr;
@@ -74,16 +73,10 @@ function groupTokensByScene(tokens: TokenDocument[]) {
   return grouped;
 }
 
-async function handleTokenEvents(
-  tokens: Array<foundry.documents.TokenDocument | null | undefined>,
-): Promise<void> {
-  const cleanTokens = tokens.filter((token): token is TokenDocument =>
-    Boolean(token),
-  );
-
+async function handleTokenEvents(tokens: TokenDocumentPF2e[]): Promise<void> {
   if (!game.user.isGM) {
     if (canvas.scene) {
-      const tokenIds = cleanTokens
+      const tokenIds = tokens
         .filter((token) => Boolean(canvas.tokens.get(token.id)))
         .map((token) => token.id);
 
@@ -96,7 +89,7 @@ async function handleTokenEvents(
     return;
   }
 
-  const groupedTokens = groupTokensByScene(cleanTokens);
+  const groupedTokens = groupTokensByScene(tokens);
   const tokenUpdates = Object.entries(groupedTokens).map(
     ([sceneId, tokens]) => {
       return [
@@ -125,7 +118,7 @@ async function handleTokenEvents(
               scaleY: image.scale,
             };
           })
-          .filter((x) => !!x),
+          .filter(isDefined),
       ] as const;
     },
   );
@@ -140,45 +133,35 @@ async function handleTokenEvents(
   }
 }
 
-function handleTokenEvent(token: foundry.documents.TokenDocument): void {
+function handleTokenEvent(token: TokenDocumentPF2e): void {
   void handleTokenEvents([token]);
 }
 
-function handleActorEvent(actor: Actor): void {
-  const docs = actor
-    .getActiveTokens()
-    .map((token) => asTokenDocument(token))
-    .filter((token): token is TokenDocument => Boolean(token));
+function handleActorEvent(actor: ActorPF2e): void {
+  const docs = actor.getActiveTokens().map((token) => token.document);
 
   void handleTokenEvents(docs);
 }
 
-function handleCombatantEvents(combatants: Combatant[]): void {
+function handleCombatantEvents(combatants: CombatantPF2e[]): void {
   const docs = combatants
-    .filter(
-      <T extends Combatant>(x: T): x is T & { tokenId: string } => !!x.tokenId,
-    )
-    .map(
-      (x) => canvas.scene?.tokens.get(x.tokenId),
-      //asTokenDocument(combatant.token as TokenOrPlaceable | null),
-    )
-    .filter((x) => !!x);
-  // .filter((token): token is TokenDocumentPF2e => Boolean(token));
+    .map((x) => x.tokenId)
+    .filter(isDefined)
+    .map((x) => canvas.scene?.tokens.get(x))
+    .filter(isDefined);
 
   void handleTokenEvents(docs);
 }
 
-function handleCombatantEvent(combatant: Combatant): void {
+function handleCombatantEvent(combatant: CombatantPF2e): void {
   handleCombatantEvents([combatant]);
 }
 
-function handleCombatEvent(encounter: Combat): void {
+function handleCombatEvent(encounter: EncounterPF2e): void {
   handleCombatantEvents(Array.from(encounter.combatants));
 }
 
-function handleCanvasEvent(currentCanvas: {
-  tokens: { placeables: Array<{ document: TokenDocument }> };
-}): void {
+function handleCanvasEvent(currentCanvas: CanvasPF2e): void {
   const docs = currentCanvas.tokens.placeables.map((token) => token.document);
   void handleTokenEvents(docs);
 }
@@ -193,7 +176,9 @@ export function registerTokenStateHooks(): void {
       const scene = game.scenes.get(data.sceneId);
       if (!scene) return;
 
-      const tokens = data.tokenIds.map((id) => scene.tokens.get(id));
+      const tokens = data.tokenIds
+        .map((id) => scene.tokens.get(id))
+        .filter(isDefined);
       await handleTokenEvents(tokens);
     });
   });
@@ -211,9 +196,8 @@ export function registerTokenStateHooks(): void {
   hooks.on("createToken", handleTokenEvent);
 
   hooks.on("canvasReady", handleCanvasEvent);
-  hooks.on("applyTokenStatusEffect", (token) => {
-    const doc = asTokenDocument(token as TokenOrPlaceable);
-    if (doc) handleTokenEvent(doc);
+  hooks.on("applyTokenStatusEffect", (token: TokenPF2e) => {
+    handleTokenEvent(token.document);
   });
 }
 

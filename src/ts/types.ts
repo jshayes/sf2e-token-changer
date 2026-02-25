@@ -1,4 +1,4 @@
-import { ActorPF2e } from "foundry-pf2e";
+import { ActorPF2e, TokenDocumentPF2e } from "foundry-pf2e";
 import { Module } from "foundry-pf2e/foundry/client/packages/_module.mjs";
 import { PrototypeToken } from "foundry-pf2e/foundry/common/data/data.mjs";
 
@@ -57,25 +57,4 @@ export type TokenStateConfig = {
   sounds: SoundTriggerRuleConfig[];
 };
 
-export type Actor = foundry.documents.Actor & {
-  system: {
-    attributes: {
-      hp: {
-        value: number;
-        max: number;
-      };
-    };
-  };
-  conditions: {
-    active: { slug: string }[];
-  };
-};
-
-export type TokenDocument = foundry.documents.TokenDocument & {
-  actor: Actor | null;
-  scene: foundry.documents.Scene;
-};
-
-export type TokenOrPrototype =
-  | foundry.documents.TokenDocument
-  | PrototypeToken<ActorPF2e>;
+export type TokenOrPrototype = TokenDocumentPF2e | PrototypeToken<ActorPF2e>;
