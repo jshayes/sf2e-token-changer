@@ -47,7 +47,6 @@ function dedupeSounds(sounds: SoundTriggerRuleConfig[]) {
 
 function playSounds(sounds: SoundTriggerRuleConfig[]) {
   sounds.forEach((sound) => {
-    console.log("playing", sound);
     foundry.audio.AudioHelper.play(sound, false);
   });
 }
