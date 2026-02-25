@@ -1,7 +1,7 @@
 import { ActorPF2e, CombatantPF2e, TokenPF2e } from "foundry-pf2e";
 import { moduleId } from "../constants";
 import { HooksManager } from "../hooksManager";
-import type { TokenStateConfig } from "../types";
+import type { SoundTriggerRuleConfig, TokenStateConfig } from "../types";
 import { checkCondition } from "../utils/conditions";
 import { getTokenState, TokenState } from "../utils/tokenState";
 
@@ -34,23 +34,30 @@ function getExpectedTokenSounds(
   });
 }
 
+function dedupeSounds(sounds: SoundTriggerRuleConfig[]) {
+  const soundSet = new Set();
+  return sounds.filter((sound) => {
+    if (soundSet.has(sound.src)) {
+      return false;
+    }
+    soundSet.add(sound.src);
+    return true;
+  });
+}
+
+function playSounds(sounds: SoundTriggerRuleConfig[]) {
+  sounds.forEach((sound) => {
+    console.log("playing", sound);
+    foundry.audio.AudioHelper.play(sound, false);
+  });
+}
+
 function playExpectedSounds(
   flags: ModuleTokenFlags,
   current: TokenState,
   previous: TokenState,
 ) {
-  const sounds = new Set();
-  getExpectedTokenSounds(flags, current, previous)
-    .filter((sound) => {
-      if (sounds.has(sound.src)) {
-        return false;
-      }
-      sounds.add(sound.src);
-      return true;
-    })
-    .map((sound) => {
-      foundry.audio.AudioHelper.play(sound, false);
-    });
+  playSounds(dedupeSounds(getExpectedTokenSounds(flags, current, previous)));
 }
 
 const hooks = new HooksManager();
@@ -86,6 +93,8 @@ export function registerTokenSoundHooks(): void {
   });
 
   hooks.on("updateActor", (actor: ActorPF2e, _: any, action: any) => {
+    const sounds: SoundTriggerRuleConfig[] = [];
+
     actor.getActiveTokens().map((token) => {
       const flags = getModuleFlags(token.document);
       const current = getTokenState(token.document);
@@ -96,8 +105,10 @@ export function registerTokenSoundHooks(): void {
         previous.hp += action.damageTaken;
       }
 
-      playExpectedSounds(flags, current, previous);
+      sounds.push(...getExpectedTokenSounds(flags, current, previous));
     });
+
+    playSounds(dedupeSounds(sounds));
   });
 
   hooks.on("applyTokenStatusEffect", (token: TokenPF2e, status: string) => {
