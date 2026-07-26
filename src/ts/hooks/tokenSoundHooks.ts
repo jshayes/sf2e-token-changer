@@ -1,9 +1,18 @@
-import { ActorPF2e, CombatantPF2e, TokenPF2e } from "foundry-pf2e";
+import {
+  ActorPF2e,
+  CombatantPF2e,
+  ItemPF2e,
+  TokenPF2e,
+} from "foundry-pf2e";
 import { moduleId } from "../constants";
 import { HooksManager } from "../hooksManager";
 import type { SoundTriggerRuleConfig, TokenStateConfig } from "../types";
 import { checkCondition } from "../utils/conditions";
-import { getTokenState, TokenState } from "../utils/tokenState";
+import {
+  getEffectIdentifiers,
+  getTokenState,
+  TokenState,
+} from "../utils/tokenState";
 
 type ModuleTokenFlags = {
   config?: TokenStateConfig | null;
@@ -110,6 +119,37 @@ export function registerTokenSoundHooks(): void {
     playSounds(dedupeSounds(sounds));
   });
 
+  hooks.on("createItem", (item: ItemPF2e) => {
+    if (!item.isOfType("effect") || !item.parent) return;
+
+    const actor = item.parent;
+    const identifiers = getEffectIdentifiers(item);
+    if (identifiers.length === 0) return;
+
+    const sounds: SoundTriggerRuleConfig[] = [];
+    for (const token of actor.getActiveTokens()) {
+      if (token.document.scene?.id !== canvas.scene?.id) continue;
+
+      const current = getTokenState(token.document);
+      if (!current) continue;
+
+      const previous = clone(current);
+      for (const identifier of identifiers) {
+        const actorAlreadyHadEffect = actor.itemTypes.effect.some(
+          (effect) =>
+            effect.id !== item.id &&
+            getEffectIdentifiers(effect).includes(identifier),
+        );
+        if (!actorAlreadyHadEffect) previous.effects.delete(identifier);
+      }
+
+      const flags = getModuleFlags(token.document);
+      sounds.push(...getExpectedTokenSounds(flags, current, previous));
+    }
+
+    playSounds(dedupeSounds(sounds));
+  });
+
   hooks.on("applyTokenStatusEffect", (token: TokenPF2e, status: string) => {
     const flags = getModuleFlags(token.document);
     const current = getTokenState(token.document);
@@ -126,6 +166,7 @@ function clone(tokenState: TokenState) {
   return {
     ...tokenState,
     conditions: new Set(tokenState.conditions),
+    effects: new Set(tokenState.effects),
   };
 }
 

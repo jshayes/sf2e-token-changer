@@ -6,7 +6,8 @@
   export let condition: UiCondition;
   export let numericOperatorOptions: Array<{ value: NumericOperator; label: string }>;
   export let conditionOptions: ConditionOption[];
-  export let conditionDisplayText: (values: string[]) => string;
+  export let effectOptions: ConditionOption[];
+  export let conditionDisplayText: (values: string[], options?: ConditionOption[]) => string;
   export let openConditionPickerKey: string | null;
   export let setOpenConditionPickerKey: (key: string | null) => void;
   export let pickerKey: string;
@@ -17,10 +18,11 @@
   let pickerButton: HTMLButtonElement | null = null;
   let popoverElement: HTMLDivElement | null = null;
   let searchInput: HTMLInputElement | null = null;
-  let statusSearch = "";
+  let optionSearch = "";
 
-  $: filteredConditionOptions = conditionOptions.filter((option) => {
-    const query = statusSearch.trim().toLowerCase();
+  $: pickerOptions = condition.type === "effect" ? effectOptions : conditionOptions;
+  $: filteredPickerOptions = pickerOptions.filter((option) => {
+    const query = optionSearch.trim().toLowerCase();
     if (!query) return true;
     return (
       option.name.toLowerCase().includes(query) ||
@@ -29,7 +31,7 @@
   });
 
   $: if (openConditionPickerKey !== pickerKey) {
-    statusSearch = "";
+    optionSearch = "";
   }
 
   $: if (openConditionPickerKey === pickerKey) {
@@ -116,8 +118,7 @@
           value={condition.operator}
           on:change={(e) =>
             onUpdate((c) => {
-              if (!("operator" in c)) return;
-              if (c.type === "status-effect") return;
+              if (c.type !== "hp-percent" && c.type !== "hp-value") return;
               const value = (e.currentTarget as HTMLSelectElement).value;
               if (value === "<" || value === "<=" || value === ">" || value === ">=") c.operator = value;
             })}
@@ -178,7 +179,7 @@
         </select>
       </div>
     </div>
-  {:else if condition.type === "status-effect"}
+  {:else if condition.type === "status-effect" || condition.type === "effect"}
     <div class="form-group">
       <label>Operator</label>
       <div class="form-fields">
@@ -187,7 +188,7 @@
           value={condition.operator}
           on:change={(e) =>
             onUpdate((c) => {
-              if (c.type !== "status-effect") return;
+              if (c.type !== "status-effect" && c.type !== "effect") return;
               c.operator = (e.currentTarget as HTMLSelectElement).value === "all-of" ? "all-of" : "any-of";
             })}
         >
@@ -197,7 +198,7 @@
       </div>
     </div>
     <div class="form-group">
-      <label>Status Slugs</label>
+      <label>{condition.type === "effect" ? "Effects" : "Statuses"}</label>
       <div class="form-fields">
         <div
           class="sf2e-token-state-editor__multiselect"
@@ -208,7 +209,9 @@
             <input
               type="text"
               readonly
-              value={showValidation && condition.value.length === 0 ? "Select at least one status condition." : conditionDisplayText(condition.value)}
+              value={showValidation && condition.value.length === 0
+                ? `Select at least one ${condition.type === "effect" ? "effect" : "status condition"}.`
+                : conditionDisplayText(condition.value, pickerOptions)}
               title={condition.value.join(", ")}
               class:sf2e-token-state-editor__input-error={showValidation && condition.value.length === 0}
             />
@@ -216,7 +219,7 @@
               type="button"
               class="sf2e-token-state-editor__icon-button"
               bind:this={pickerButton}
-              title="Select conditions"
+              title={condition.type === "effect" ? "Select effects" : "Select conditions"}
               on:pointerdown|stopPropagation|preventDefault={() => setOpenConditionPickerKey(openConditionPickerKey === pickerKey ? null : pickerKey)}
             >
               <i class="fa-solid fa-gear"></i>
@@ -233,23 +236,25 @@
                 <input
                   type="text"
                   bind:this={searchInput}
-                  placeholder="Search conditions..."
-                  bind:value={statusSearch}
+                  placeholder={condition.type === "effect" ? "Search effects..." : "Search conditions..."}
+                  bind:value={optionSearch}
                   on:pointerdown|stopPropagation
                 />
               </div>
-              {#if filteredConditionOptions.length === 0}
-                <p class="sf2e-token-state-editor__multiselect-empty">No matching conditions</p>
+              {#if filteredPickerOptions.length === 0}
+                <p class="sf2e-token-state-editor__multiselect-empty">
+                  {condition.type === "effect" ? "No matching effects" : "No matching conditions"}
+                </p>
               {:else}
                 <div class="sf2e-token-state-editor__multiselect-popover-items">
-                  {#each filteredConditionOptions as option}
+                  {#each filteredPickerOptions as option}
                     <label class="sf2e-token-state-editor__multiselect-option">
                       <input
                         type="checkbox"
                         checked={condition.value.includes(option.slug)}
                         on:change={() =>
                           onUpdate((c) => {
-                            if (c.type !== "status-effect") return;
+                            if (c.type !== "status-effect" && c.type !== "effect") return;
                             const selected = new Set(c.value);
                             if (selected.has(option.slug)) selected.delete(option.slug);
                               else selected.add(option.slug);

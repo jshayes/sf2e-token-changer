@@ -1,6 +1,7 @@
 import { TokenState } from "./tokenState";
 import {
   Condition,
+  EffectCondition,
   HpPercentCondition,
   HpValueCondition,
   InCombatCondition,
@@ -69,6 +70,23 @@ function checkStatusEffectCondition(
   }
 }
 
+function checkEffectCondition(
+  condition: EffectCondition,
+  token: TokenState,
+): boolean {
+  const matchedEffects = condition.value.filter((effect) =>
+    token.effects.has(effect),
+  );
+  switch (condition.operator) {
+    case "any-of":
+      return matchedEffects.length > 0;
+    case "all-of":
+      return matchedEffects.length === condition.value.length;
+    default:
+      return false;
+  }
+}
+
 export function checkCondition(condition: Condition, token: TokenState) {
   switch (condition.type) {
     case "hp-percent":
@@ -79,6 +97,8 @@ export function checkCondition(condition: Condition, token: TokenState) {
       return checkInCombatCondition(condition, token);
     case "status-effect":
       return checkStatusEffectCondition(condition, token);
+    case "effect":
+      return checkEffectCondition(condition, token);
     default:
       return false;
   }

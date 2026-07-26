@@ -3,6 +3,7 @@ import {
   CanvasPF2e,
   CombatantPF2e,
   EncounterPF2e,
+  ItemPF2e,
   TokenDocumentPF2e,
   TokenPF2e,
 } from "foundry-pf2e";
@@ -143,6 +144,11 @@ function handleActorEvent(actor: ActorPF2e): void {
   void handleTokenEvents(docs);
 }
 
+function handleEffectItemEvent(item: ItemPF2e): void {
+  if (!item.isOfType("effect") || !item.parent) return;
+  handleActorEvent(item.parent);
+}
+
 function handleCombatantEvents(combatants: CombatantPF2e[]): void {
   const docs = combatants
     .map((x) => x.tokenId)
@@ -192,6 +198,8 @@ export function registerTokenStateHooks(): void {
   hooks.on("deleteCombatant", handleCombatantEvent);
 
   hooks.on("updateActor", handleActorEvent);
+  hooks.on("createItem", handleEffectItemEvent);
+  hooks.on("deleteItem", handleEffectItemEvent);
 
   hooks.on("createToken", handleTokenEvent);
 

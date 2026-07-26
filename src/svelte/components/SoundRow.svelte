@@ -17,17 +17,19 @@
   export let onDragOver: (event: DragEvent, index: number) => void;
   export let onDrop: (event: DragEvent, index: number) => void;
 
-  function hasEmptyStatusEffectCondition(conditions: UiCondition[]): boolean {
+  function hasEmptyPickerCondition(conditions: UiCondition[]): boolean {
     return conditions.some(
       (condition) =>
-        condition.type === "status-effect" && condition.value.length === 0,
+        (condition.type === "status-effect" || condition.type === "effect") &&
+        condition.value.length === 0,
     );
   }
 
   function hasStatusErrors(row: SoundTriggerRuleConfig): boolean {
     return (
-      (row.trigger.type === "status-effect" && row.trigger.value.length === 0) ||
-      hasEmptyStatusEffectCondition(row.conditions)
+      ((row.trigger.type === "status-effect" || row.trigger.type === "effect") &&
+        row.trigger.value.length === 0) ||
+      hasEmptyPickerCondition(row.conditions)
     );
   }
 
@@ -66,7 +68,7 @@
       <input
         type="text"
         readonly
-        value={hasConditionError ? "Status-effect trigger/conditions must select at least one status." : soundConditionSummary(row.trigger, row.conditions)}
+        value={hasConditionError ? "Status/effect trigger conditions must select at least one option." : soundConditionSummary(row.trigger, row.conditions)}
         class:sf2e-token-state-editor__input-error={hasConditionError}
       />
       <button

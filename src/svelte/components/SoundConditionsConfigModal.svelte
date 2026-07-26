@@ -9,7 +9,8 @@
   export let conditionTypeOptions: Array<{ value: ConditionType; label: string }>;
   export let numericOperatorOptions: Array<{ value: NumericOperator; label: string }>;
   export let conditionOptions: ConditionOption[];
-  export let conditionDisplayText: (values: string[]) => string;
+  export let effectOptions: ConditionOption[];
+  export let conditionDisplayText: (values: string[], options?: ConditionOption[]) => string;
 
   export let onClose: () => void;
   export let onSave: () => void;
@@ -59,12 +60,16 @@
   }
 
   function hasValidationErrors(): boolean {
-    if (modal.trigger.type === "status-effect" && modal.trigger.value.length === 0) {
+    if (
+      (modal.trigger.type === "status-effect" || modal.trigger.type === "effect") &&
+      modal.trigger.value.length === 0
+    ) {
       return true;
     }
     return modal.conditions.some(
       (condition) =>
-        condition.type === "status-effect" && condition.value.length === 0,
+        (condition.type === "status-effect" || condition.type === "effect") &&
+        condition.value.length === 0,
     );
   }
 
@@ -107,6 +112,7 @@
           condition={modal.trigger}
           {numericOperatorOptions}
           {conditionOptions}
+          {effectOptions}
           {conditionDisplayText}
           {openConditionPickerKey}
           showValidation={hasAttemptedSave}
@@ -153,6 +159,7 @@
             {condition}
             {numericOperatorOptions}
             {conditionOptions}
+            {effectOptions}
             {conditionDisplayText}
             {openConditionPickerKey}
             showValidation={hasAttemptedSave}

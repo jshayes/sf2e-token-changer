@@ -45,6 +45,8 @@ function defaultCondition(type: Condition["type"] = "hp-percent"): Condition {
       return { type, value: true };
     case "status-effect":
       return { type, operator: "any-of", value: [] };
+    case "effect":
+      return { type, operator: "any-of", value: [] };
   }
 }
 
@@ -95,7 +97,7 @@ function normalizeCondition(raw: unknown): Condition {
   if (type === "in-combat") {
     return { type, value: Boolean((input as { value?: unknown }).value) };
   }
-  if (type === "status-effect") {
+  if (type === "status-effect" || type === "effect") {
     const operator =
       (input as { operator?: unknown }).operator === "all-of"
         ? "all-of"

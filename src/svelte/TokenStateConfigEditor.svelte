@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import {
     clamp,
     conditionDisplayText as conditionDisplayTextHelper,
@@ -39,11 +40,18 @@
   let dragState: { list: EditorRowList; index: number } | null = null;
   let dropTarget: { list: EditorRowList; index: number } | null = null;
   let conditionOptions: ConditionOption[] = getConditionOptions();
+  let effectOptions: ConditionOption[] = [];
   let imageConfigModal: ImageConfigModalState | null = null;
   let soundConfigModal: SoundConfigModalState | null = null;
   let tokenStateConditionsConfigModal: TokenStateConditionsConfigModalState | null = null;
   let soundConditionsConfigModal: SoundConditionsConfigModalState | null = null;
   let hasAttemptedSave = false;
+
+  onMount(() => {
+    void getEffectOptions().then((options) => {
+      effectOptions = options;
+    });
+  });
 
   $: jsonPreview = JSON.stringify(toSerializableConfig(config), null, 2);
 
@@ -113,7 +121,7 @@
 
   function setUiConditionOperator(condition: UiCondition, value: string): void {
     if (!("operator" in condition)) return;
-    if (condition.type === "status-effect") {
+    if (condition.type === "status-effect" || condition.type === "effect") {
       condition.operator = value === "all-of" ? "all-of" : "any-of";
     } else if (value === "<" || value === "<=" || value === ">" || value === ">=") {
       condition.operator = value;
@@ -149,6 +157,78 @@
       slug,
       name: manager?.conditions?.get(slug)?.name ?? slug,
     }));
+  }
+
+  async function getEffectOptions(): Promise<ConditionOption[]> {
+    type EffectOptionSource = {
+      name?: string;
+      type?: string;
+      uuid?: string;
+      sourceId?: string | null;
+      slug?: string | null;
+    };
+    type EffectIndexEntry = EffectOptionSource & { _id?: string };
+    type ItemPack = {
+      collection: string;
+      documentName?: string;
+      getIndex: (options: { fields: string[] }) => Promise<Iterable<EffectIndexEntry>>;
+    };
+
+    const options = new Map<string, ConditionOption>();
+    const addOption = (identifier: string | null | undefined, name: string | undefined): void => {
+      if (!identifier) return;
+      options.set(identifier, { slug: identifier, name: name ?? identifier });
+    };
+
+    const worldItems = (
+      (globalThis as { game?: { items?: { contents?: EffectOptionSource[] } } }).game
+        ?.items?.contents ?? []
+    ).filter((item) => item.type === "effect");
+    for (const item of worldItems) {
+      addOption(item.uuid ?? item.sourceId ?? item.slug, item.name);
+    }
+
+    const actors = (
+      (globalThis as {
+        game?: {
+          actors?: {
+            contents?: Array<{ itemTypes?: { effect?: EffectOptionSource[] } }>;
+          };
+        };
+      }).game?.actors?.contents ?? []
+    );
+    for (const actor of actors) {
+      for (const effect of actor.itemTypes?.effect ?? []) {
+        addOption(effect.sourceId ?? effect.slug, effect.name);
+      }
+    }
+
+    const packs = (
+      (globalThis as { game?: { packs?: { contents?: ItemPack[] } } }).game?.packs
+        ?.contents ?? []
+    ).filter((pack) => pack.documentName === "Item");
+    const indexes = await Promise.all(
+      packs.map(async (pack) => {
+        try {
+          return { pack, index: await pack.getIndex({ fields: ["type"] }) };
+        } catch {
+          return { pack, index: [] as EffectIndexEntry[] };
+        }
+      }),
+    );
+    for (const { pack, index } of indexes) {
+      for (const entry of index) {
+        if (entry.type !== "effect" || !entry._id) continue;
+        addOption(
+          `Compendium.${pack.collection}.Item.${entry._id}`,
+          entry.name,
+        );
+      }
+    }
+
+    return Array.from(options.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
   }
 
   function openDefaultImageConfig(): void {
@@ -302,22 +382,14 @@
     soundConfigModal = null;
   }
 
-  function toggleStatusConditionValue(condition: UiCondition, slug: string): void {
-    if (condition.type !== "status-effect") return;
-    const selected = new Set(condition.value);
-    if (selected.has(slug)) selected.delete(slug);
-    else selected.add(slug);
-    condition.value = Array.from(selected);
-  }
-
-  function conditionDisplayText(values: string[]): string {
-    return conditionDisplayTextHelper(values, conditionOptions);
+  function conditionDisplayText(values: string[], options = conditionOptions): string {
+    return conditionDisplayTextHelper(values, options);
   }
 
   function validateCondition(condition: UiCondition, path: string): string | null {
-    if (condition.type !== "status-effect") return null;
+    if (condition.type !== "status-effect" && condition.type !== "effect") return null;
     if (condition.value.length > 0) return null;
-    return `${path}: status conditions cannot be empty.`;
+    return `${path}: ${condition.type === "effect" ? "effects" : "status conditions"} cannot be empty.`;
   }
 
   function validateConfigBeforeSave(): string | null {
@@ -530,6 +602,7 @@
       {conditionTypeOptions}
       {numericOperatorOptions}
       {conditionOptions}
+      {effectOptions}
       {conditionDisplayText}
       onClose={closeTokenStateConditionsConfigModal}
       onSave={saveTokenStateConditionsConfigModal}
@@ -542,6 +615,7 @@
       {conditionTypeOptions}
       {numericOperatorOptions}
       {conditionOptions}
+      {effectOptions}
       {conditionDisplayText}
       onClose={closeSoundConditionsConfigModal}
       onSave={saveSoundConditionsConfigModal}

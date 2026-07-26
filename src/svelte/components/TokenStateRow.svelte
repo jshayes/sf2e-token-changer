@@ -16,14 +16,15 @@
   export let onDragOver: (event: DragEvent, index: number) => void;
   export let onDrop: (event: DragEvent, index: number) => void;
 
-  function hasEmptyStatusEffectCondition(conditions: UiCondition[]): boolean {
+  function hasEmptyPickerCondition(conditions: UiCondition[]): boolean {
     return conditions.some(
       (condition) =>
-        condition.type === "status-effect" && condition.value.length === 0,
+        (condition.type === "status-effect" || condition.type === "effect") &&
+        condition.value.length === 0,
     );
   }
 
-  $: hasConditionError = showValidation && hasEmptyStatusEffectCondition(row.conditions);
+  $: hasConditionError = showValidation && hasEmptyPickerCondition(row.conditions);
   $: hasImageError = showValidation && !row.image.trim();
 </script>
 
@@ -59,7 +60,7 @@
       <input
         type="text"
         readonly
-        value={hasConditionError ? "Status-effect conditions must select at least one status." : tokenStateConditionsSummary(row.conditions)}
+        value={hasConditionError ? "Status/effect conditions must select at least one option." : tokenStateConditionsSummary(row.conditions)}
         class:sf2e-token-state-editor__input-error={hasConditionError}
       />
       <button

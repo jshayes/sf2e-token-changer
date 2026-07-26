@@ -23,12 +23,18 @@ export type StatusEffectCondition = {
   operator: StatusOperator;
   value: string[];
 };
+export type EffectCondition = {
+  type: "effect";
+  operator: StatusOperator;
+  value: string[];
+};
 
 export type Condition =
   | HpPercentCondition
   | HpValueCondition
   | InCombatCondition
-  | StatusEffectCondition;
+  | StatusEffectCondition
+  | EffectCondition;
 
 export type TokenStateImageRuleConfig = {
   id: string;

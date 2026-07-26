@@ -1,12 +1,13 @@
 export type NumericOperator = "<" | "<=" | ">" | ">=";
 export type StatusOperator = "any-of" | "all-of";
-export type ConditionType = "hp-percent" | "hp-value" | "in-combat" | "status-effect";
+export type ConditionType = "hp-percent" | "hp-value" | "in-combat" | "status-effect" | "effect";
 
 export type UiCondition =
   | { type: "hp-percent"; operator: NumericOperator; value: number }
   | { type: "hp-value"; operator: NumericOperator; value: number }
   | { type: "in-combat"; value: boolean }
-  | { type: "status-effect"; operator: StatusOperator; value: string[] };
+  | { type: "status-effect"; operator: StatusOperator; value: string[] }
+  | { type: "effect"; operator: StatusOperator; value: string[] };
 
 export type ConditionOption = { slug: string; name: string };
 
@@ -15,6 +16,7 @@ export const conditionTypeOptions: Array<{ value: ConditionType; label: string }
   { value: "hp-value", label: "HP Value" },
   { value: "in-combat", label: "In Combat" },
   { value: "status-effect", label: "Status Effect" },
+  { value: "effect", label: "Effect" },
 ];
 
 export const numericOperatorOptions: Array<{ value: NumericOperator; label: string }> = [
@@ -39,6 +41,8 @@ export function defaultCondition(type: ConditionType = "hp-percent"): UiConditio
       return { type, value: true };
     case "status-effect":
       return { type, operator: "any-of", value: [] };
+    case "effect":
+      return { type, operator: "any-of", value: [] };
   }
 }
 
@@ -53,7 +57,8 @@ export function formatConditionSummary(condition: UiCondition): string {
   if (condition.type === "hp-value") return `HP ${condition.operator} ${condition.value}`;
   if (condition.type === "in-combat") return condition.value ? "In Combat: Yes" : "In Combat: No";
   const mode = condition.operator === "all-of" ? "all" : "any";
-  return `Status (${mode}): ${condition.value.join(", ") || "Select conditions"}`;
+  const label = condition.type === "effect" ? "Effect" : "Status";
+  return `${label} (${mode}): ${condition.value.join(", ") || `Select ${label.toLowerCase()}s`}`;
 }
 
 export function tokenStateConditionsSummary(conditions: UiCondition[]): string {
